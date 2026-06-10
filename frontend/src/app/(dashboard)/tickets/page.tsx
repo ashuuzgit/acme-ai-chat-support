@@ -81,6 +81,8 @@ function formatDate(iso: string) {
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
+const PAGE_SIZE = 10;
+
 export default function TicketsPage() {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
@@ -88,10 +90,12 @@ export default function TicketsPage() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [priorityFilter, setPriorityFilter] = useState("all");
   const [updating, setUpdating] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
 
   const fetchTickets = useCallback(async () => {
     setLoading(true);
     setError(null);
+    setPage(1);
     try {
       const params: Record<string, string> = {};
       if (statusFilter !== "all") params.status = statusFilter;
@@ -198,6 +202,26 @@ export default function TicketsPage() {
           </p>
         </div>
       ) : (
+        (() => {
+          const totalPages = Math.max(1, Math.ceil(tickets.length / PAGE_SIZE));
+          const safePage   = Math.min(page, totalPages);
+          const paged      = tickets.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+
+          // Page numbers to show: always first, last, current ±1, with ellipsis gaps
+          function pageNums(): (number | "…")[] {
+            if (totalPages <= 7) return Array.from({ length: totalPages }, (_, i) => i + 1);
+            const nums = Array.from(new Set([1, totalPages, safePage, safePage - 1, safePage + 1].filter(n => n >= 1 && n <= totalPages)));
+            const sorted = nums.sort((a, b) => a - b);
+            const result: (number | "…")[] = [];
+            sorted.forEach((n, i) => {
+              if (i > 0 && n - (sorted[i - 1] as number) > 1) result.push("…");
+              result.push(n);
+            });
+            return result;
+          }
+
+          return (
+        <>
         <div className="rounded-lg border overflow-hidden">
           <Table>
             <TableHeader>
@@ -213,7 +237,7 @@ export default function TicketsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {tickets.map((ticket) => (
+              {paged.map((ticket) => (
                 <TableRow key={ticket.id} className="group">
                   <TableCell className="font-medium">
                     {ticket.customer_name ?? (
@@ -270,6 +294,62 @@ export default function TicketsPage() {
             </TableBody>
           </Table>
         </div>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between gap-2 pt-1 flex-wrap">
+            <p className="text-xs text-muted-foreground shrink-0">
+              {(safePage - 1) * PAGE_SIZE + 1}–{Math.min(safePage * PAGE_SIZE, tickets.length)} of {tickets.length} tickets
+            </p>
+
+            <div className="flex items-center gap-1 flex-wrap">
+              {/* Prev */}
+              <button
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={safePage === 1}
+                className="h-8 w-8 flex items-center justify-center rounded-lg border text-sm text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-30 disabled:pointer-events-none transition-colors"
+                aria-label="Previous page"
+              >
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+
+              {pageNums().map((n, i) =>
+                n === "…" ? (
+                  <span key={`ellipsis-${i}`} className="h-8 w-8 flex items-center justify-center text-xs text-muted-foreground select-none">…</span>
+                ) : (
+                  <button
+                    key={n}
+                    onClick={() => setPage(n as number)}
+                    className={`h-8 w-8 flex items-center justify-center rounded-lg border text-xs font-medium transition-colors
+                      ${safePage === n
+                        ? "bg-slate-900 text-white border-slate-900 dark:bg-slate-100 dark:text-slate-900 dark:border-slate-100"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                      }`}
+                  >
+                    {n}
+                  </button>
+                )
+              )}
+
+              {/* Next */}
+              <button
+                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                disabled={safePage === totalPages}
+                className="h-8 w-8 flex items-center justify-center rounded-lg border text-sm text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-30 disabled:pointer-events-none transition-colors"
+                aria-label="Next page"
+              >
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        )}
+        </>
+          );
+        })()
       )}
     </div>
   );

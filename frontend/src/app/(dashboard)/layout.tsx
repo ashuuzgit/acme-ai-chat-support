@@ -95,7 +95,9 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     if (saved !== null) setPinned(JSON.parse(saved));
   }, []);
 
-  const isExpanded = pinned || hovered;
+  const isExpanded  = pinned || hovered;
+  // Labels/text visible when desktop is expanded OR mobile drawer is open
+  const showLabels  = isExpanded || mobileOpen;
 
   function togglePin() {
     setPinned((prev) => {
@@ -143,8 +145,8 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           className={cn(
             "fixed inset-y-0 left-0 z-30 flex flex-col bg-background border-r",
             "transition-[width] duration-300 ease-in-out overflow-hidden",
-            // mobile: slide in/out
-            "md:static md:translate-x-0",
+            // mobile: slide in/out overlay
+            "md:sticky md:top-0 md:h-screen md:translate-x-0 md:shrink-0",
             mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0",
             // desktop: narrow when collapsed, full when expanded or hovered
             isExpanded ? "md:w-60" : "md:w-16",
@@ -162,7 +164,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             <span
               className={cn(
                 "font-semibold text-base tracking-tight whitespace-nowrap flex-1 transition-all duration-200",
-                isExpanded ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-2 pointer-events-none md:hidden"
+                showLabels ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-2 pointer-events-none md:hidden"
               )}
             >
               SupportAI
@@ -175,6 +177,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                 "hidden md:flex p-1.5 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-all duration-200 shrink-0",
                 isExpanded ? "opacity-100" : "opacity-0 pointer-events-none"
               )}
+
               aria-label={pinned ? "Unpin sidebar" : "Pin sidebar open"}
               title={pinned ? "Unpin sidebar" : "Pin sidebar open"}
             >
@@ -216,7 +219,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                   onClick={handleNavClick}
                   className={cn(
                     "flex items-center gap-3 rounded-lg py-2 text-sm transition-all duration-200",
-                    isExpanded ? "px-2.5" : "md:justify-center md:px-2 px-2.5",
+                    showLabels ? "px-2.5" : "md:justify-center md:px-2 px-2.5",
                     active
                       ? "bg-primary text-primary-foreground font-medium shadow-sm"
                       : "text-muted-foreground hover:bg-muted/80 hover:text-foreground hover:shadow-[0_0_0_1px_hsl(var(--primary)/0.10),_0_2px_8px_hsl(var(--primary)/0.06)]"
@@ -226,7 +229,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                   <span
                     className={cn(
                       "truncate transition-all duration-200 whitespace-nowrap",
-                      isExpanded ? "opacity-100 w-auto" : "opacity-0 w-0 md:hidden"
+                      showLabels ? "opacity-100 w-auto" : "opacity-0 w-0 md:hidden"
                     )}
                   >
                     {item.label}
@@ -235,7 +238,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
               );
 
               // Show tooltip only when icon-only mode
-              if (!isExpanded) {
+              if (!showLabels) {
                 return (
                   <Tooltip key={item.href}>
                     <TooltipTrigger asChild>{navLink}</TooltipTrigger>
@@ -250,7 +253,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
           {/* Sign out */}
           <div className="px-2 py-4 border-t overflow-hidden">
-            {!isExpanded ? (
+            {!showLabels ? (
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button
@@ -268,11 +271,11 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
               onClick={handleLogout}
               className={cn(
                 "flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-all duration-200",
-                !isExpanded && "md:hidden"
+                !showLabels && "md:hidden"
               )}
             >
               <LogoutIcon />
-              <span className={cn("transition-all duration-200 whitespace-nowrap", isExpanded ? "opacity-100" : "opacity-0 w-0")}>
+              <span className={cn("transition-all duration-200 whitespace-nowrap", showLabels ? "opacity-100" : "opacity-0 w-0")}>
                 Sign out
               </span>
             </button>
@@ -282,7 +285,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         {/* ── Main ────────────────────────────────────────────────────────── */}
         <div className="flex flex-1 flex-col min-h-screen min-w-0">
           {/* Mobile topbar */}
-          <header className="flex h-14 items-center gap-3 border-b bg-background px-4 md:hidden shrink-0">
+          <header className="sticky top-0 z-20 flex h-14 items-center gap-3 border-b bg-background/95 backdrop-blur-sm px-4 md:hidden shrink-0">
             <button
               onClick={() => setMobileOpen(true)}
               className="p-2 -ml-2 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
