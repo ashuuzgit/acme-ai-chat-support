@@ -1,4 +1,8 @@
-CREATE EXTENSION IF NOT EXISTS vector;
+-- ============================================================
+-- SupportAI — Supabase schema
+-- Free-tier stack: Groq (chat) + PostgreSQL FTS (RAG)
+-- No pgvector / no OpenAI embeddings required
+-- ============================================================
 
 -- Businesses
 CREATE TABLE businesses (
@@ -40,16 +44,23 @@ CREATE TABLE documents (
   created_at TIMESTAMP DEFAULT NOW()
 );
 
--- Chunks
+-- Chunks (no embedding column — full-text search via tsvector)
 CREATE TABLE chunks (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   document_id UUID REFERENCES documents(id) ON DELETE CASCADE,
   business_id UUID REFERENCES businesses(id),
   content TEXT NOT NULL,
-  embedding vector(1536),
+  -- Auto-maintained FTS vector; no manual updates needed
+  search_vector tsvector GENERATED ALWAYS AS (
+    to_tsvector('english', content)
+  ) STORED,
   created_at TIMESTAMP DEFAULT NOW()
 );
-CREATE INDEX ON chunks USING ivfflat (embedding vector_cosine_ops);
+
+-- GIN index for fast full-text search
+CREATE INDEX chunks_search_idx ON chunks USING GIN(search_vector);
+-- Partial index to keep per-business lookups fast
+CREATE INDEX chunks_business_idx ON chunks(business_id);
 
 -- Conversations
 CREATE TABLE conversations (

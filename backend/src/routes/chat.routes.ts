@@ -1,14 +1,14 @@
 import { Router, Request, Response } from "express";
-import OpenAI from "openai";
+import Groq from "groq-sdk";
 import { supabase } from "../db/supabase";
 import { searchChunks, buildSystemPrompt } from "../services/rag.service";
 import { detectEscalation } from "../services/escalation.service";
 import { createTicket } from "../services/ticket.service";
 
 const router = Router();
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
-// POST /api/chat  (public)
+// POST /api/chat  (public — customer-facing widget endpoint)
 router.post("/", async (req: Request, res: Response) => {
   const {
     message,
@@ -31,8 +31,8 @@ router.post("/", async (req: Request, res: Response) => {
       .from("conversations")
       .insert({
         business_id: businessId,
-        customer_name: customerName,
-        customer_email: customerEmail,
+        customer_name: customerName ?? null,
+        customer_email: customerEmail ?? null,
         status: "active",
       })
       .select("id")
@@ -42,14 +42,14 @@ router.post("/", async (req: Request, res: Response) => {
     conversationId = conversation.id;
   }
 
-  // Fetch ai_config for this business
+  // Fetch ai_config for this business (soft failure — defaults used if missing)
   const { data: config } = await supabase
     .from("ai_configs")
     .select("bot_name, welcome_message, personality, escalation_rules")
     .eq("business_id", businessId)
     .single();
 
-  // RAG: fetch relevant chunks
+  // RAG: full-text search for relevant chunks
   const chunks = await searchChunks(message, businessId).catch(() => [] as string[]);
   const systemPrompt = buildSystemPrompt(chunks, config);
 
@@ -63,9 +63,11 @@ router.post("/", async (req: Request, res: Response) => {
   let fullResponse = "";
 
   try {
-    const stream = await openai.chat.completions.create({
-      model: "gpt-4o",
+    const stream = await groq.chat.completions.create({
+      model: "llama-3.3-70b-versatile",
       stream: true,
+      temperature: 0.4,
+      max_tokens: 1024,
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: message },
@@ -80,6 +82,7 @@ router.post("/", async (req: Request, res: Response) => {
       }
     }
   } catch (err) {
+    console.error("Groq stream error:", err);
     res.write(`data: ${JSON.stringify({ error: "AI service unavailable" })}\n\n`);
     res.end();
     return;
@@ -87,7 +90,7 @@ router.post("/", async (req: Request, res: Response) => {
 
   const responseTimeMs = Date.now() - startTime;
 
-  // Persist messages
+  // Persist both messages in parallel
   await Promise.all([
     supabase.from("messages").insert({
       conversation_id: conversationId,
@@ -104,7 +107,7 @@ router.post("/", async (req: Request, res: Response) => {
     }),
   ]);
 
-  // Escalation check
+  // Escalation detection → auto-ticket
   const escalationRules: string[] = config?.escalation_rules ?? [];
   const priority = detectEscalation(message, escalationRules);
 

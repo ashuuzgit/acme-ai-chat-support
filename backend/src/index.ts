@@ -9,6 +9,9 @@ dotenv.config();
 import authRoutes from "./routes/auth.routes";
 import documentRoutes from "./routes/documents.routes";
 import chatRoutes from "./routes/chat.routes";
+import configRoutes from "./routes/config.routes";
+import ticketsRoutes from "./routes/tickets.routes";
+import conversationsRoutes from "./routes/conversations.routes";
 import { errorHandler } from "./middleware/error.middleware";
 
 const app = express();
@@ -25,6 +28,9 @@ app.get("/health", (_req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/documents", documentRoutes);
 app.use("/api/chat", chatRoutes);
+app.use("/api/config", configRoutes);
+app.use("/api/tickets", ticketsRoutes);
+app.use("/api/conversations", conversationsRoutes);
 
 app.use(errorHandler);
 
