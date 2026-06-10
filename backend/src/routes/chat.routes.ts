@@ -50,8 +50,21 @@ router.post("/", async (req: Request, res: Response) => {
     .single();
 
   // RAG: full-text search for relevant chunks
-  const chunks = await searchChunks(message, businessId).catch(() => [] as string[]);
+  const chunks = await searchChunks(message, businessId).catch((err) => {
+    console.error("[rag] searchChunks error:", err?.message);
+    return [] as string[];
+  });
+  console.log(`[rag] "${message.slice(0, 60)}" → ${chunks.length} chunks | personality=${config?.personality ?? "default"}`);
+
   const systemPrompt = buildSystemPrompt(chunks, config);
+
+  // ── Save user message BEFORE streaming so conversation order is always correct ──
+  await supabase.from("messages").insert({
+    conversation_id: conversationId,
+    role: "user",
+    content: message,
+    event_type: "message",
+  });
 
   // SSE headers
   res.setHeader("Content-Type", "text/event-stream");
@@ -90,28 +103,21 @@ router.post("/", async (req: Request, res: Response) => {
 
   const responseTimeMs = Date.now() - startTime;
 
-  // Persist both messages in parallel
-  await Promise.all([
-    supabase.from("messages").insert({
-      conversation_id: conversationId,
-      role: "user",
-      content: message,
-      event_type: "message",
-    }),
-    supabase.from("messages").insert({
-      conversation_id: conversationId,
-      role: "assistant",
-      content: fullResponse,
-      event_type: "message",
-      response_time_ms: responseTimeMs,
-    }),
-  ]);
+  // Save assistant response
+  await supabase.from("messages").insert({
+    conversation_id: conversationId,
+    role: "assistant",
+    content: fullResponse,
+    event_type: "message",
+    response_time_ms: responseTimeMs,
+  });
 
   // Escalation detection → auto-ticket
   const escalationRules: string[] = config?.escalation_rules ?? [];
   const priority = detectEscalation(message, escalationRules);
 
   if (priority) {
+    console.log(`[ticket] creating priority=${priority}`);
     await createTicket({
       businessId,
       conversationId: conversationId!,
@@ -119,12 +125,10 @@ router.post("/", async (req: Request, res: Response) => {
       customerEmail,
       query: message,
       priority,
-    }).catch((err) => console.error("Failed to create ticket:", err));
+    }).catch((err) => console.error("[ticket] create failed:", err?.message ?? err));
   }
 
-  res.write(
-    `data: ${JSON.stringify({ done: true, conversationId: conversationId! })}\n\n`
-  );
+  res.write(`data: ${JSON.stringify({ done: true, conversationId: conversationId! })}\n\n`);
   res.end();
 });
 
