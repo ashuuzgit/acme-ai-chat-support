@@ -2,7 +2,6 @@
 
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -230,6 +229,7 @@ function ConversationsInner() {
   const router = useRouter();
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
   const [listLoading, setListLoading] = useState(true);
+  const [listError, setListError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [activeId, setActiveId] = useState<string | null>(null);
   const [thread, setThread] = useState<ConversationDetail | null>(null);
@@ -241,12 +241,13 @@ function ConversationsInner() {
 
   const fetchConversations = useCallback(async (q?: string) => {
     setListLoading(true);
+    setListError(null);
     try {
       const url = q?.trim() ? `/api/conversations/search?q=${encodeURIComponent(q)}` : "/api/conversations";
       const { data } = await api.get<ConversationSummary[]>(url);
       setConversations(data);
     } catch {
-      toast.error("Failed to load conversations");
+      setListError("Could not load conversations.");
     } finally {
       setListLoading(false);
     }
@@ -278,7 +279,7 @@ function ConversationsInner() {
     api
       .get<ConversationDetail>(`/api/conversations/${activeId}/messages`)
       .then(({ data }) => setThread(data))
-      .catch(() => toast.error("Failed to load messages"))
+      .catch(() => { /* thread panel shows empty state */ })
       .finally(() => setThreadLoading(false));
   }, [activeId]);
 
@@ -326,7 +327,12 @@ function ConversationsInner() {
 
         {/* List */}
         <ScrollArea className="flex-1">
-          {listLoading ? (
+          {listError ? (
+            <div className="px-4 py-6 text-center text-xs text-destructive space-y-2">
+              <p>{listError}</p>
+              <button onClick={() => fetchConversations()} className="underline underline-offset-2">Retry</button>
+            </div>
+          ) : listLoading ? (
             <div className="flex justify-center py-10">
               <svg className="h-5 w-5 animate-spin text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
                 <path d="M21 12a9 9 0 1 1-6.219-8.56" />

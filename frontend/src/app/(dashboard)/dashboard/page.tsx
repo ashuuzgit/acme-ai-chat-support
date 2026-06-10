@@ -2,9 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { toast } from "sonner";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import api from "@/lib/api";
 
@@ -102,14 +100,19 @@ function QuickAction({
 export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  function fetchStats() {
+    setLoading(true);
+    setError(null);
     api
       .get<DashboardStats>("/api/analytics/dashboard")
       .then(({ data }) => setStats(data))
-      .catch(() => toast.error("Failed to load dashboard stats"))
+      .catch(() => setError("Could not reach the server. Check your connection or backend."))
       .finally(() => setLoading(false));
-  }, []);
+  }
+
+  useEffect(() => { fetchStats(); }, []);
 
   return (
     <div className="max-w-5xl mx-auto space-y-8">
@@ -130,6 +133,19 @@ export default function DashboardPage() {
           </Button>
         </Link>
       </div>
+
+      {/* Inline error */}
+      {error && (
+        <div className="flex items-center gap-3 rounded-lg border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+          <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+          </svg>
+          <span className="flex-1">{error}</span>
+          <Button variant="ghost" size="sm" className="h-7 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={fetchStats}>
+            Retry
+          </Button>
+        </div>
+      )}
 
       {/* Stat cards */}
       {loading ? (

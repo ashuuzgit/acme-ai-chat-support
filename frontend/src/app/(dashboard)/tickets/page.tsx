@@ -84,12 +84,14 @@ function formatDate(iso: string) {
 export default function TicketsPage() {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState("all");
   const [priorityFilter, setPriorityFilter] = useState("all");
   const [updating, setUpdating] = useState<string | null>(null);
 
   const fetchTickets = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
       const params: Record<string, string> = {};
       if (statusFilter !== "all") params.status = statusFilter;
@@ -97,7 +99,7 @@ export default function TicketsPage() {
       const { data } = await api.get<Ticket[]>("/api/tickets", { params });
       setTickets(data);
     } catch {
-      toast.error("Failed to load tickets");
+      setError("Could not load tickets. Check your connection or backend.");
     } finally {
       setLoading(false);
     }
@@ -129,6 +131,19 @@ export default function TicketsPage() {
           Auto-escalated conversations that need human attention
         </p>
       </div>
+
+      {/* Inline error */}
+      {error && (
+        <div className="flex items-center gap-3 rounded-lg border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+          <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+          </svg>
+          <span className="flex-1">{error}</span>
+          <Button variant="ghost" size="sm" className="h-7 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={fetchTickets}>
+            Retry
+          </Button>
+        </div>
+      )}
 
       {/* Filters */}
       <div className="flex items-center gap-3">

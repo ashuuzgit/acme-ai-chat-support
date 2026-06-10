@@ -1,14 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { toast } from "sonner";
 import {
   LineChart,
   Line,
   XAxis,
   YAxis,
   CartesianGrid,
-  Tooltip,
+  Tooltip as RechartsTooltip,
   ResponsiveContainer,
 } from "recharts";
 import {
@@ -28,6 +27,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import api from "@/lib/api";
+import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -81,18 +86,32 @@ function StatCard({
   value,
   sub,
   icon,
+  hint,
 }: {
   label: string;
   value: string | number;
   sub?: string;
   icon: React.ReactNode;
+  hint?: string;
 }) {
   return (
     <Card>
       <CardContent className="pt-6">
         <div className="flex items-start justify-between">
           <div>
-            <p className="text-sm text-muted-foreground">{label}</p>
+            <div className="flex items-center gap-1.5">
+              <p className="text-sm text-muted-foreground">{label}</p>
+              {hint && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <svg className="h-3.5 w-3.5 text-muted-foreground/50 hover:text-muted-foreground cursor-help transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 5.25h.008v.008H12v-.008Z" />
+                    </svg>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-48">{hint}</TooltipContent>
+                </Tooltip>
+              )}
+            </div>
             <p className="mt-1 text-3xl font-bold tracking-tight">{value}</p>
             {sub && <p className="mt-1 text-xs text-muted-foreground">{sub}</p>}
           </div>
@@ -115,8 +134,11 @@ export default function AnalyticsPage() {
   const [overview, setOverview] = useState<OverviewData | null>(null);
   const [knowledge, setKnowledge] = useState<KnowledgeData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  function fetchData() {
+    setLoading(true);
+    setError(null);
     Promise.all([
       api.get<OverviewData>("/api/analytics/overview"),
       api.get<KnowledgeData>("/api/analytics/knowledge"),
@@ -125,9 +147,11 @@ export default function AnalyticsPage() {
         setOverview(ov);
         setKnowledge(kn);
       })
-      .catch(() => toast.error("Failed to load analytics"))
+      .catch(() => setError("Could not load analytics. Check your connection or backend."))
       .finally(() => setLoading(false));
-  }, []);
+  }
+
+  useEffect(() => { fetchData(); }, []);
 
   return (
     <div className="max-w-6xl mx-auto space-y-8">
@@ -138,6 +162,19 @@ export default function AnalyticsPage() {
           Performance overview for your AI support assistant
         </p>
       </div>
+
+      {/* Inline error */}
+      {error && (
+        <div className="flex items-center gap-3 rounded-lg border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+          <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+          </svg>
+          <span className="flex-1">{error}</span>
+          <Button variant="ghost" size="sm" className="h-7 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={fetchData}>
+            Retry
+          </Button>
+        </div>
+      )}
 
       {/* Stat cards */}
       {loading ? (
@@ -157,6 +194,7 @@ export default function AnalyticsPage() {
             label="Total Conversations"
             value={(overview?.total_conversations ?? 0).toLocaleString()}
             sub="all time"
+            hint="Every chat session started by a customer via the widget, regardless of outcome."
             icon={
               <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.98 2.193-.34.027-.68.052-1.02.072v3.091l-3-3c-1.354 0-2.694-.055-4.02-.163a2.115 2.115 0 0 1-.825-.242m9.345-8.334a2.126 2.126 0 0 0-.476-.095 48.64 48.64 0 0 0-8.048 0c-1.131.094-1.976 1.057-1.976 2.192v4.286c0 .837.46 1.58 1.155 1.951m9.345-8.334V6.637c0-1.621-1.152-3.026-2.76-3.235A48.455 48.455 0 0 0 11.25 3c-2.115 0-4.198.137-6.24.402-1.608.209-2.76 1.614-2.76 3.235v6.226c0 1.621 1.152 3.026 2.76 3.235.577.075 1.157.14 1.74.194V21l4.155-4.155" />
@@ -167,6 +205,7 @@ export default function AnalyticsPage() {
             label="Avg Response Time"
             value={overview ? formatMs(overview.avg_response_ms) : "—"}
             sub="AI generation time"
+            hint="Median time for the AI to generate a reply, measured from when the user sends a message to when the first token streams back."
             icon={
               <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
@@ -177,6 +216,7 @@ export default function AnalyticsPage() {
             label="Resolution Rate"
             value={`${overview?.resolution_rate ?? 0}%`}
             sub="tickets resolved or closed"
+            hint="Percentage of support tickets that reached 'resolved' or 'closed' status — higher is better."
             icon={
               <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
@@ -187,6 +227,7 @@ export default function AnalyticsPage() {
             label="Escalation Rate"
             value={`${overview?.escalation_rate ?? 0}%`}
             sub="conversations escalated"
+            hint="Percentage of conversations that triggered a support ticket (i.e. the AI detected an issue requiring human follow-up)."
             icon={
               <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18 9 11.25l4.306 4.306a11.95 11.95 0 0 1 5.814-5.518l2.74-1.22m0 0-5.94-2.281m5.94 2.28-2.28 5.941" />
@@ -224,7 +265,7 @@ export default function AnalyticsPage() {
                   axisLine={false}
                   tickLine={false}
                 />
-                <Tooltip
+                <RechartsTooltip
                   contentStyle={{
                     background: "hsl(var(--card))",
                     border: "1px solid hsl(var(--border))",
