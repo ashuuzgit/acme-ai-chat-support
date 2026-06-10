@@ -85,53 +85,63 @@ router.get("/overview", async (req: Request, res: Response) => {
 router.get("/dashboard", async (req: Request, res: Response) => {
   const { businessId } = req.user!;
 
+  // Build date boundaries for last 7 days
+  const days: { ymd: string; start: string; end: string }[] = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const start = new Date(d); start.setHours(0, 0, 0, 0);
+    const end   = new Date(d); end.setHours(23, 59, 59, 999);
+    days.push({
+      ymd:   d.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+      start: start.toISOString(),
+      end:   end.toISOString(),
+    });
+  }
+
+  // Totals + last-90-days ticket rows (for daily breakdown)
   const [
     { count: totalConversations },
     { count: openTickets },
     { count: resolvedTickets },
     { count: escalatedTickets },
     { data: messages },
+    { data: recentTickets },
   ] = await Promise.all([
-    supabase
-      .from("conversations")
-      .select("*", { count: "exact", head: true })
-      .eq("business_id", businessId),
-    supabase
-      .from("tickets")
-      .select("*", { count: "exact", head: true })
-      .eq("business_id", businessId)
-      .eq("status", "open"),
-    supabase
-      .from("tickets")
-      .select("*", { count: "exact", head: true })
-      .eq("business_id", businessId)
-      .in("status", ["resolved", "closed"]),
-    supabase
-      .from("tickets")
-      .select("*", { count: "exact", head: true })
-      .eq("business_id", businessId)
-      .in("priority", ["urgent", "high"]),
-    supabase
-      .from("messages")
-      .select("response_time_ms")
-      .eq("role", "assistant")
-      .not("response_time_ms", "is", null)
-      .limit(200),
+    supabase.from("conversations").select("*", { count: "exact", head: true }).eq("business_id", businessId),
+    supabase.from("tickets").select("*", { count: "exact", head: true }).eq("business_id", businessId).eq("status", "open"),
+    supabase.from("tickets").select("*", { count: "exact", head: true }).eq("business_id", businessId).in("status", ["resolved", "closed"]),
+    supabase.from("tickets").select("*", { count: "exact", head: true }).eq("business_id", businessId).in("priority", ["urgent", "high"]),
+    supabase.from("messages").select("response_time_ms").eq("role", "assistant").not("response_time_ms", "is", null).limit(200),
+    supabase.from("tickets").select("status, priority, created_at").eq("business_id", businessId)
+      .gte("created_at", days[0].start).lte("created_at", days[6].end),
   ]);
 
   const totalTickets = (openTickets ?? 0) + (resolvedTickets ?? 0);
-  const resolutionRate =
-    totalTickets > 0
-      ? Math.round(((resolvedTickets ?? 0) / totalTickets) * 100)
-      : 0;
+  const resolutionRate = totalTickets > 0 ? Math.round(((resolvedTickets ?? 0) / totalTickets) * 100) : 0;
+  const avgResponseMs = messages && messages.length > 0
+    ? Math.round(messages.reduce((s: number, m: any) => s + (m.response_time_ms ?? 0), 0) / messages.length)
+    : 0;
 
-  const avgResponseMs =
-    messages && messages.length > 0
-      ? Math.round(
-          messages.reduce((s: number, m: any) => s + (m.response_time_ms ?? 0), 0) /
-            messages.length
-        )
-      : 0;
+  // Per-day series
+  const spark_open: number[]       = [];
+  const spark_escalated: number[]  = [];
+  const spark_resolved: number[]   = [];
+  const spark_rate: number[]       = [];
+
+  for (const day of days) {
+    const dayTickets = (recentTickets ?? []).filter((t: any) =>
+      t.created_at >= day.start && t.created_at <= day.end
+    );
+    const open_n  = dayTickets.filter((t: any) => t.status === "open" || t.status === "in_progress").length;
+    const esc_n   = dayTickets.filter((t: any) => t.priority === "urgent" || t.priority === "high").length;
+    const res_n   = dayTickets.filter((t: any) => t.status === "resolved" || t.status === "closed").length;
+    const total_n = dayTickets.length;
+    spark_open.push(open_n);
+    spark_escalated.push(esc_n);
+    spark_resolved.push(res_n);
+    spark_rate.push(total_n > 0 ? Math.round((res_n / total_n) * 100) : 0);
+  }
 
   res.json({
     total_conversations: totalConversations ?? 0,
@@ -140,6 +150,10 @@ router.get("/dashboard", async (req: Request, res: Response) => {
     escalated_tickets: escalatedTickets ?? 0,
     resolution_rate: resolutionRate,
     avg_response_ms: avgResponseMs,
+    spark_open,
+    spark_escalated,
+    spark_resolved,
+    spark_rate,
   });
 });
 
