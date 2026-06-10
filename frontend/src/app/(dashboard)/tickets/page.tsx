@@ -39,17 +39,17 @@ interface Ticket {
 // ─── Badge helpers ────────────────────────────────────────────────────────────
 
 const PRIORITY_STYLES: Record<Ticket["priority"], string> = {
-  urgent: "bg-red-50 text-red-700 border-red-200 hover:bg-red-50",
-  high: "bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-50",
-  medium: "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-50",
-  low: "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-50",
+  urgent: "bg-slate-900 text-white border-slate-900 hover:bg-slate-900",
+  high:   "bg-slate-700 text-white border-slate-700 hover:bg-slate-700",
+  medium: "bg-violet-100 text-violet-800 border-violet-200 hover:bg-violet-100 dark:bg-violet-950/50 dark:text-violet-300 dark:border-violet-800",
+  low:    "bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-100 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700",
 };
 
 const STATUS_STYLES: Record<Ticket["status"], string> = {
-  open: "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-50",
-  in_progress: "bg-violet-50 text-violet-700 border-violet-200 hover:bg-violet-50",
-  resolved: "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-50",
-  closed: "bg-slate-50 text-slate-500 border-slate-200 hover:bg-slate-50",
+  open:        "bg-violet-50 text-violet-700 border-violet-200 hover:bg-violet-50 dark:bg-violet-950/40 dark:text-violet-400 dark:border-violet-800",
+  in_progress: "bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-100 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700",
+  resolved:    "bg-white text-slate-800 border-slate-300 hover:bg-white dark:bg-slate-900 dark:text-slate-200 dark:border-slate-600",
+  closed:      "bg-slate-50 text-slate-400 border-slate-200 hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-500 dark:border-slate-700",
 };
 
 const STATUS_LABELS: Record<Ticket["status"], string> = {

@@ -356,7 +356,7 @@ export default function DashboardPage() {
             </Link>
           </div>
 
-          <div className="divide-y flex-1">
+          <div className="divide-y flex-1 overflow-y-auto max-h-64 lg:max-h-none">
             {loading ? (
               [...Array(5)].map((_, i) => (
                 <div key={i} className="flex items-center gap-3 px-5 py-3.5">

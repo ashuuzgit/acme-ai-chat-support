@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { type ReactNode } from "react";
@@ -12,8 +12,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-
-// ─── Nav items ────────────────────────────────────────────────────────────────
 
 const NAV = [
   {
@@ -73,33 +71,48 @@ const NAV = [
   },
 ];
 
-// ─── Logout icon ──────────────────────────────────────────────────────────────
-
 const LogoutIcon = () => (
   <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
     <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 9V5.25A2.25 2.25 0 0 1 10.5 3h6a2.25 2.25 0 0 1 2.25 2.25v13.5A2.25 2.25 0 0 1 16.5 21h-6a2.25 2.25 0 0 1-2.25-2.25V15m-3 0-3-3m0 0 3-3m-3 3H15" />
   </svg>
 );
 
-// ─── Layout ───────────────────────────────────────────────────────────────────
-
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const [collapsed, setCollapsed] = useState(false);
+
+  // pinned = user clicked to keep sidebar open permanently
+  const [pinned, setPinned] = useState(false);
+  // hovered = mouse is over the sidebar (temporary expand)
+  const [hovered, setHovered] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
+  // leave timer — small delay before collapsing so it doesn't snap shut instantly
+  const leaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   useEffect(() => {
-    const saved = localStorage.getItem("sidebar-collapsed");
-    if (saved !== null) setCollapsed(JSON.parse(saved));
+    const saved = localStorage.getItem("sidebar-pinned");
+    if (saved !== null) setPinned(JSON.parse(saved));
   }, []);
 
-  function toggle() {
-    setCollapsed((prev) => {
+  const isExpanded = pinned || hovered;
+
+  function togglePin() {
+    setPinned((prev) => {
       const next = !prev;
-      localStorage.setItem("sidebar-collapsed", JSON.stringify(next));
+      localStorage.setItem("sidebar-pinned", JSON.stringify(next));
+      if (next) setHovered(false); // no need for hover state when pinned
       return next;
     });
+  }
+
+  function handleMouseEnter() {
+    if (leaveTimer.current) clearTimeout(leaveTimer.current);
+    setHovered(true);
+  }
+
+  function handleMouseLeave() {
+    leaveTimer.current = setTimeout(() => setHovered(false), 120);
   }
 
   function handleNavClick() {
@@ -125,51 +138,63 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
         {/* ── Sidebar ─────────────────────────────────────────────────────── */}
         <aside
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
           className={cn(
-            "fixed inset-y-0 left-0 z-30 flex flex-col bg-background border-r transition-all duration-300 ease-in-out",
+            "fixed inset-y-0 left-0 z-30 flex flex-col bg-background border-r",
+            "transition-[width] duration-300 ease-in-out overflow-hidden",
+            // mobile: slide in/out
             "md:static md:translate-x-0",
             mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0",
-            collapsed ? "md:w-16" : "md:w-60",
-            "w-60" // mobile always full-width sidebar
+            // desktop: narrow when collapsed, full when expanded or hovered
+            isExpanded ? "md:w-60" : "md:w-16",
+            "w-60",
           )}
         >
           {/* Header */}
-          <div
-            className={cn(
-              "flex h-16 items-center border-b px-3 shrink-0",
-              collapsed ? "md:justify-center" : "justify-between"
-            )}
-          >
-            <div className={cn("flex items-center gap-2.5 overflow-hidden", collapsed && "md:hidden")}>
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground text-sm font-bold">
-                S
-              </div>
-              <span className="font-semibold text-base tracking-tight whitespace-nowrap">SupportAI</span>
-            </div>
-
-            {/* Logo mark when collapsed (desktop only) */}
-            <div className={cn("hidden shrink-0 h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground text-sm font-bold", collapsed && "md:flex")}>
+          <div className="flex h-16 items-center border-b px-3 shrink-0 gap-2">
+            {/* Logo mark — always visible */}
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground text-sm font-bold">
               S
             </div>
 
-            {/* Collapse toggle — shown when expanded */}
-            <button
-              onClick={toggle}
+            {/* Brand name — fades in when expanded */}
+            <span
               className={cn(
-                "hidden md:flex p-1.5 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors shrink-0",
-                collapsed && "md:hidden"
+                "font-semibold text-base tracking-tight whitespace-nowrap flex-1 transition-all duration-200",
+                isExpanded ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-2 pointer-events-none md:hidden"
               )}
-              aria-label="Collapse sidebar"
             >
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-              </svg>
+              SupportAI
+            </span>
+
+            {/* Pin / unpin button — only visible when expanded on desktop */}
+            <button
+              onClick={togglePin}
+              className={cn(
+                "hidden md:flex p-1.5 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-all duration-200 shrink-0",
+                isExpanded ? "opacity-100" : "opacity-0 pointer-events-none"
+              )}
+              aria-label={pinned ? "Unpin sidebar" : "Pin sidebar open"}
+              title={pinned ? "Unpin sidebar" : "Pin sidebar open"}
+            >
+              {pinned ? (
+                // X / unpin
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                </svg>
+              ) : (
+                // Pin icon
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16l-7-3.5L5 21V5Z" />
+                </svg>
+              )}
             </button>
 
             {/* Close on mobile */}
             <button
               onClick={() => setMobileOpen(false)}
-              className="p-1.5 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors md:hidden"
+              className="p-1.5 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors md:hidden shrink-0"
               aria-label="Close menu"
             >
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -178,26 +203,8 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             </button>
           </div>
 
-          {/* Expand button — desktop collapsed state */}
-          {collapsed && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={toggle}
-                  className="hidden md:flex mx-auto mt-3 p-1.5 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-                  aria-label="Expand sidebar"
-                >
-                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                  </svg>
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="right">Expand sidebar</TooltipContent>
-            </Tooltip>
-          )}
-
           {/* Nav */}
-          <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto">
+          <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto overflow-x-hidden">
             {NAV.map((item) => {
               const active =
                 pathname === item.href ||
@@ -209,24 +216,26 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                   onClick={handleNavClick}
                   className={cn(
                     "flex items-center gap-3 rounded-lg py-2 text-sm transition-all duration-200",
-                    collapsed ? "md:justify-center md:px-2 px-2.5" : "px-2.5",
+                    isExpanded ? "px-2.5" : "md:justify-center md:px-2 px-2.5",
                     active
                       ? "bg-primary text-primary-foreground font-medium shadow-sm"
-                      : [
-                          "text-muted-foreground",
-                          "hover:bg-muted/80 hover:text-foreground",
-                          "hover:shadow-[0_0_0_1px_hsl(var(--primary)/0.12),_0_2px_10px_hsl(var(--primary)/0.07)]",
-                        ].join(" ")
+                      : "text-muted-foreground hover:bg-muted/80 hover:text-foreground hover:shadow-[0_0_0_1px_hsl(var(--primary)/0.10),_0_2px_8px_hsl(var(--primary)/0.06)]"
                   )}
                 >
                   {item.icon}
-                  <span className={cn("truncate", collapsed && "md:hidden")}>
+                  <span
+                    className={cn(
+                      "truncate transition-all duration-200 whitespace-nowrap",
+                      isExpanded ? "opacity-100 w-auto" : "opacity-0 w-0 md:hidden"
+                    )}
+                  >
                     {item.label}
                   </span>
                 </Link>
               );
 
-              if (collapsed) {
+              // Show tooltip only when icon-only mode
+              if (!isExpanded) {
                 return (
                   <Tooltip key={item.href}>
                     <TooltipTrigger asChild>{navLink}</TooltipTrigger>
@@ -240,8 +249,8 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           </nav>
 
           {/* Sign out */}
-          <div className="px-2 py-4 border-t">
-            {collapsed ? (
+          <div className="px-2 py-4 border-t overflow-hidden">
+            {!isExpanded ? (
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button
@@ -258,12 +267,14 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             <button
               onClick={handleLogout}
               className={cn(
-                "flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-colors",
-                collapsed && "md:hidden"
+                "flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-all duration-200",
+                !isExpanded && "md:hidden"
               )}
             >
               <LogoutIcon />
-              Sign out
+              <span className={cn("transition-all duration-200 whitespace-nowrap", isExpanded ? "opacity-100" : "opacity-0 w-0")}>
+                Sign out
+              </span>
             </button>
           </div>
         </aside>

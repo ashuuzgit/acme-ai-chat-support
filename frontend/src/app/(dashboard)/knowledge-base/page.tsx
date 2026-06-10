@@ -82,22 +82,16 @@ function formatDate(iso: string): string {
 function StatusBadge({ status }: { status: Document["status"] }) {
   if (status === "ready") {
     return (
-      <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-50 gap-1">
-        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 inline-block" />
+      <Badge className="bg-slate-900 text-white border-slate-900 hover:bg-slate-900 gap-1">
+        <span className="h-1.5 w-1.5 rounded-full bg-violet-300 inline-block" />
         Ready
       </Badge>
     );
   }
   if (status === "processing") {
     return (
-      <Badge className="bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-50 gap-1.5">
-        <svg
-          className="h-3 w-3 animate-spin"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={2}
-        >
+      <Badge className="bg-violet-50 text-violet-700 border-violet-200 hover:bg-violet-50 gap-1.5 dark:bg-violet-950/40 dark:text-violet-400 dark:border-violet-800">
+        <svg className="h-3 w-3 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
           <path d="M21 12a9 9 0 1 1-6.219-8.56" />
         </svg>
         Processing
@@ -105,8 +99,8 @@ function StatusBadge({ status }: { status: Document["status"] }) {
     );
   }
   return (
-    <Badge className="bg-red-50 text-red-700 border-red-200 hover:bg-red-50 gap-1">
-      <span className="h-1.5 w-1.5 rounded-full bg-red-500 inline-block" />
+    <Badge className="bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-100 gap-1 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700">
+      <span className="h-1.5 w-1.5 rounded-full bg-slate-400 inline-block" />
       Failed
     </Badge>
   );
@@ -296,14 +290,14 @@ export default function KnowledgeBasePage() {
             {...getRootProps()}
             className={`rounded-lg border-2 border-dashed transition-colors cursor-pointer px-8 py-10 text-center
               ${isDragActive
-                ? "border-primary bg-primary/5"
-                : "border-border hover:border-primary/50 hover:bg-muted/40"
+                ? "border-violet-400 bg-violet-50/60 dark:bg-violet-950/20"
+                : "border-border hover:border-slate-400 hover:bg-muted/40"
               }`}
           >
             <input {...getInputProps()} />
             <div className="flex flex-col items-center gap-2 pointer-events-none">
               <svg
-                className={`h-10 w-10 transition-colors ${isDragActive ? "text-primary" : "text-muted-foreground"}`}
+                className={`h-10 w-10 transition-colors ${isDragActive ? "text-violet-500" : "text-muted-foreground"}`}
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
