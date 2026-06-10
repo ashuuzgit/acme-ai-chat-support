@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -218,6 +218,14 @@ function EmptyThread() {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function ConversationsPage() {
+  return (
+    <Suspense fallback={<div className="flex h-[calc(100vh-6rem)] items-center justify-center"><svg className="h-6 w-6 animate-spin text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M21 12a9 9 0 1 1-6.219-8.56" /></svg></div>}>
+      <ConversationsInner />
+    </Suspense>
+  );
+}
+
+function ConversationsInner() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);

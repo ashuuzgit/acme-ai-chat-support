@@ -81,6 +81,68 @@ router.get("/overview", async (req: Request, res: Response) => {
   });
 });
 
+// GET /api/analytics/dashboard  — lightweight stat cards for the main dashboard
+router.get("/dashboard", async (req: Request, res: Response) => {
+  const { businessId } = req.user!;
+
+  const [
+    { count: totalConversations },
+    { count: openTickets },
+    { count: resolvedTickets },
+    { count: escalatedTickets },
+    { data: messages },
+  ] = await Promise.all([
+    supabase
+      .from("conversations")
+      .select("*", { count: "exact", head: true })
+      .eq("business_id", businessId),
+    supabase
+      .from("tickets")
+      .select("*", { count: "exact", head: true })
+      .eq("business_id", businessId)
+      .eq("status", "open"),
+    supabase
+      .from("tickets")
+      .select("*", { count: "exact", head: true })
+      .eq("business_id", businessId)
+      .in("status", ["resolved", "closed"]),
+    supabase
+      .from("tickets")
+      .select("*", { count: "exact", head: true })
+      .eq("business_id", businessId)
+      .in("priority", ["urgent", "high"]),
+    supabase
+      .from("messages")
+      .select("response_time_ms")
+      .eq("role", "assistant")
+      .not("response_time_ms", "is", null)
+      .limit(200),
+  ]);
+
+  const totalTickets = (openTickets ?? 0) + (resolvedTickets ?? 0);
+  const resolutionRate =
+    totalTickets > 0
+      ? Math.round(((resolvedTickets ?? 0) / totalTickets) * 100)
+      : 0;
+
+  const avgResponseMs =
+    messages && messages.length > 0
+      ? Math.round(
+          messages.reduce((s: number, m: any) => s + (m.response_time_ms ?? 0), 0) /
+            messages.length
+        )
+      : 0;
+
+  res.json({
+    total_conversations: totalConversations ?? 0,
+    open_tickets: openTickets ?? 0,
+    resolved_tickets: resolvedTickets ?? 0,
+    escalated_tickets: escalatedTickets ?? 0,
+    resolution_rate: resolutionRate,
+    avg_response_ms: avgResponseMs,
+  });
+});
+
 // GET /api/analytics/knowledge
 router.get("/knowledge", async (req: Request, res: Response) => {
   const { businessId } = req.user!;
