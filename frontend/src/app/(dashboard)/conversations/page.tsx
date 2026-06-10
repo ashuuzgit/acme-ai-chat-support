@@ -45,7 +45,8 @@ interface ConversationDetail {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function formatTime(iso: string) {
-  const d = new Date(iso);
+  const normalized = /[Z+]/.test(iso) ? iso : iso + "Z";
+  const d = new Date(normalized);
   const now = new Date();
   const diffDays = Math.floor((now.getTime() - d.getTime()) / 86400000);
   if (diffDays === 0) return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -55,11 +56,9 @@ function formatTime(iso: string) {
 }
 
 function formatFull(iso: string) {
-  return new Date(iso).toLocaleString([], {
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
+  const normalized = /[Z+]/.test(iso) ? iso : iso + "Z";
+  return new Date(normalized).toLocaleString([], {
+    month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
   });
 }
 
@@ -75,43 +74,41 @@ function getDisplayName(name: string | null, email: string | null) {
 
 // ─── Conversation list item ───────────────────────────────────────────────────
 
-function ConversationItem({
-  conv,
-  active,
-  onClick,
-}: {
+function ConversationItem({ conv, active, onClick }: {
   conv: ConversationSummary;
   active: boolean;
   onClick: () => void;
 }) {
   const initials = getInitials(conv.customer_name, conv.customer_email);
   const name = getDisplayName(conv.customer_name, conv.customer_email);
+  const isActive = conv.status === "active";
 
   return (
     <button
       onClick={onClick}
       className={cn(
-        "w-full text-left px-4 py-3.5 transition-colors hover:bg-muted/60 border-b last:border-b-0",
-        active && "bg-muted"
+        "w-full text-left px-4 py-3.5 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50 border-b last:border-b-0",
+        active && "bg-violet-50/60 dark:bg-violet-950/20 border-l-2 border-l-violet-300 dark:border-l-violet-600"
       )}
     >
       <div className="flex items-start gap-3">
-        {/* Avatar */}
-        <div className="shrink-0 h-9 w-9 rounded-full bg-primary/10 text-primary text-xs font-semibold flex items-center justify-center">
-          {initials}
+        <div className="relative shrink-0">
+          <div className="h-9 w-9 rounded-full bg-violet-100 dark:bg-violet-900/40 text-violet-700 dark:text-violet-300 text-xs font-semibold flex items-center justify-center">
+            {initials}
+          </div>
+          {isActive && (
+            <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-violet-400 border-2 border-background" />
+          )}
         </div>
-        {/* Content */}
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between gap-2">
             <p className="text-sm font-medium truncate">{name}</p>
-            <span className="text-xs text-muted-foreground shrink-0">
-              {formatTime(conv.last_message_at)}
-            </span>
+            <span className="text-xs text-muted-foreground shrink-0">{formatTime(conv.last_message_at)}</span>
           </div>
           {conv.last_message && (
             <p className="mt-0.5 text-xs text-muted-foreground truncate">
               {conv.last_message_role === "assistant" && (
-                <span className="text-primary/60 mr-1">Bot:</span>
+                <span className="text-slate-400 mr-1">Bot:</span>
               )}
               {conv.last_message}
             </p>
@@ -126,9 +123,9 @@ function ConversationItem({
 
 function EscalationBanner({ content }: { content: string }) {
   return (
-    <div className="mx-auto max-w-sm rounded-lg bg-amber-50 border border-amber-200 px-4 py-2.5 text-center my-3">
-      <p className="text-xs font-medium text-amber-800">
-        ⚠️ Escalation detected — {content}
+    <div className="mx-auto max-w-xs rounded-lg bg-violet-50 dark:bg-violet-950/30 border border-violet-200 dark:border-violet-800 px-4 py-2.5 text-center my-3">
+      <p className="text-xs font-medium text-violet-800 dark:text-violet-300 break-words">
+        ↑ Escalation detected — {content}
       </p>
     </div>
   );
@@ -136,9 +133,9 @@ function EscalationBanner({ content }: { content: string }) {
 
 function TicketBanner({ content }: { content: string }) {
   return (
-    <div className="mx-auto max-w-sm rounded-lg bg-blue-50 border border-blue-200 px-4 py-2.5 text-center my-3">
-      <p className="text-xs font-medium text-blue-800">
-        🎫 Ticket created — {content}
+    <div className="mx-auto max-w-xs rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-4 py-2.5 text-center my-3">
+      <p className="text-xs font-medium text-slate-600 dark:text-slate-300 break-words">
+        Ticket created — {content}
       </p>
     </div>
   );
@@ -148,47 +145,34 @@ function TicketBanner({ content }: { content: string }) {
 
 function ChatBubble({ message }: { message: Message }) {
   const isUser = message.role === "user";
-
   if (message.event_type === "escalation") return <EscalationBanner content={message.content} />;
   if (message.event_type === "ticket_created") return <TicketBanner content={message.content} />;
 
   return (
     <div className={cn("flex gap-2.5 max-w-[85%]", isUser ? "ml-auto flex-row-reverse" : "mr-auto")}>
-      {/* Avatar dot */}
-      <div
-        className={cn(
-          "shrink-0 mt-1 h-7 w-7 rounded-full flex items-center justify-center text-xs font-semibold",
-          isUser
-            ? "bg-primary text-primary-foreground"
-            : "bg-muted text-muted-foreground"
-        )}
-      >
+      <div className={cn(
+        "shrink-0 mt-1 h-7 w-7 rounded-full flex items-center justify-center text-xs font-semibold",
+        isUser
+          ? "bg-slate-900 text-white dark:bg-slate-200 dark:text-slate-900"
+          : "bg-violet-100 dark:bg-violet-900/40 text-violet-700 dark:text-violet-300"
+      )}>
         {isUser ? "U" : "AI"}
       </div>
-
       <div className={cn("flex flex-col gap-1", isUser && "items-end")}>
-        <div
-          className={cn(
-            "rounded-2xl px-4 py-2.5 text-sm leading-relaxed",
-            isUser
-              ? "bg-primary text-primary-foreground rounded-tr-sm"
-              : "bg-muted text-foreground rounded-tl-sm"
-          )}
-        >
-          {/* Preserve line breaks in AI responses */}
-          {message.content.split("\n").map((line, i) => (
-            <span key={i}>
-              {line}
-              {i < message.content.split("\n").length - 1 && <br />}
-            </span>
+        <div className={cn(
+          "rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed break-words",
+          isUser
+            ? "bg-slate-900 text-white dark:bg-slate-200 dark:text-slate-900 rounded-tr-sm"
+            : "bg-muted text-foreground rounded-tl-sm border"
+        )}>
+          {message.content.split("\n").map((line, i, arr) => (
+            <span key={i}>{line}{i < arr.length - 1 && <br />}</span>
           ))}
         </div>
-        <span className="text-[11px] text-muted-foreground px-1">
+        <span className="text-[11px] text-muted-foreground px-1 whitespace-nowrap">
           {formatFull(message.created_at)}
           {message.response_time_ms && (
-            <span className="ml-1 text-muted-foreground/60">
-              · {(message.response_time_ms / 1000).toFixed(1)}s
-            </span>
+            <span className="ml-1 opacity-60"> · {(message.response_time_ms / 1000).toFixed(1)}s</span>
           )}
         </span>
       </div>
@@ -206,10 +190,8 @@ function EmptyThread() {
           <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 0 1-2.555-.337A5.972 5.972 0 0 1 5.41 20.97a5.969 5.969 0 0 1-.474-.065 4.48 4.48 0 0 0 .978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25Z" />
         </svg>
       </div>
-      <p className="text-sm font-medium text-foreground">Select a conversation</p>
-      <p className="mt-1 text-xs text-muted-foreground">
-        Choose a conversation from the list to view the message thread
-      </p>
+      <p className="text-sm font-medium">Select a conversation</p>
+      <p className="mt-1 text-xs text-muted-foreground">Choose from the list to view messages</p>
     </div>
   );
 }
@@ -218,7 +200,13 @@ function EmptyThread() {
 
 export default function ConversationsPage() {
   return (
-    <Suspense fallback={<div className="flex h-[calc(100vh-6rem)] items-center justify-center"><svg className="h-6 w-6 animate-spin text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M21 12a9 9 0 1 1-6.219-8.56" /></svg></div>}>
+    <Suspense fallback={
+      <div className="flex h-[calc(100vh-6rem)] items-center justify-center">
+        <svg className="h-6 w-6 animate-spin text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+          <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+        </svg>
+      </div>
+    }>
       <ConversationsInner />
     </Suspense>
   );
@@ -234,10 +222,10 @@ function ConversationsInner() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [thread, setThread] = useState<ConversationDetail | null>(null);
   const [threadLoading, setThreadLoading] = useState(false);
+  // Mobile: "list" shows the sidebar, "thread" shows the chat
+  const [mobilePane, setMobilePane] = useState<"list" | "thread">("list");
   const bottomRef = useRef<HTMLDivElement>(null);
   const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // ── Load conversation list ─────────────────────────────────────────────────
 
   const fetchConversations = useCallback(async (q?: string) => {
     setListLoading(true);
@@ -253,17 +241,12 @@ function ConversationsInner() {
     }
   }, []);
 
-  useEffect(() => {
-    fetchConversations();
-  }, [fetchConversations]);
+  useEffect(() => { fetchConversations(); }, [fetchConversations]);
 
-  // Honour ?id= param from tickets page
   useEffect(() => {
     const id = searchParams.get("id");
-    if (id) setActiveId(id);
+    if (id) { setActiveId(id); setMobilePane("thread"); }
   }, [searchParams]);
-
-  // ── Debounced search ───────────────────────────────────────────────────────
 
   useEffect(() => {
     if (searchTimeout.current) clearTimeout(searchTimeout.current);
@@ -271,58 +254,56 @@ function ConversationsInner() {
     return () => { if (searchTimeout.current) clearTimeout(searchTimeout.current); };
   }, [search, fetchConversations]);
 
-  // ── Load thread ────────────────────────────────────────────────────────────
-
   useEffect(() => {
     if (!activeId) return;
     setThreadLoading(true);
     api
       .get<ConversationDetail>(`/api/conversations/${activeId}/messages`)
       .then(({ data }) => setThread(data))
-      .catch(() => { /* thread panel shows empty state */ })
+      .catch(() => {})
       .finally(() => setThreadLoading(false));
   }, [activeId]);
 
-  // Auto-scroll to bottom when thread loads
   useEffect(() => {
     if (thread) bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [thread]);
 
   function selectConversation(id: string) {
     setActiveId(id);
+    setMobilePane("thread");
     router.replace(`/conversations?id=${id}`, { scroll: false });
+  }
+
+  function goBackToList() {
+    setMobilePane("list");
   }
 
   // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    <div className="flex h-[calc(100vh-6rem)] max-w-7xl mx-auto rounded-xl border overflow-hidden bg-background">
+    <div className="flex h-[calc(100vh-4rem)] md:h-[calc(100vh-6rem)] max-w-7xl mx-auto md:rounded-xl md:border overflow-hidden bg-background">
 
-      {/* ── Left panel: conversation list ── */}
-      <div className="w-80 shrink-0 flex flex-col border-r">
+      {/* ── Left panel: conversation list ──────────────────────────────────── */}
+      <div className={cn(
+        "flex flex-col border-r bg-background",
+        // Mobile: full width, hidden when viewing thread
+        "w-full md:w-72 md:shrink-0",
+        mobilePane === "thread" ? "hidden md:flex" : "flex"
+      )}>
         {/* Search */}
-        <div className="p-3 border-b">
+        <div className="p-3 border-b shrink-0">
           <div className="relative">
             <svg className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
             </svg>
-            <Input
-              placeholder="Search conversations…"
-              className="pl-8 h-9 text-sm"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
+            <Input placeholder="Search conversations…" className="pl-8 h-9 text-sm" value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
         </div>
 
         {/* Header */}
-        <div className="px-4 py-2.5 flex items-center justify-between">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-            Conversations
-          </p>
-          {!listLoading && (
-            <span className="text-xs text-muted-foreground">{conversations.length}</span>
-          )}
+        <div className="px-4 py-2.5 flex items-center justify-between shrink-0">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Conversations</p>
+          {!listLoading && <span className="text-xs text-muted-foreground">{conversations.length}</span>}
         </div>
 
         {/* List */}
@@ -357,8 +338,12 @@ function ConversationsInner() {
         </ScrollArea>
       </div>
 
-      {/* ── Right panel: message thread ── */}
-      <div className="flex-1 flex flex-col min-w-0">
+      {/* ── Right panel: message thread ────────────────────────────────────── */}
+      <div className={cn(
+        "flex-1 flex flex-col min-w-0 bg-background",
+        // Mobile: full width, hidden when viewing list
+        mobilePane === "list" ? "hidden md:flex" : "flex"
+      )}>
         {!activeId ? (
           <EmptyThread />
         ) : threadLoading ? (
@@ -370,41 +355,48 @@ function ConversationsInner() {
         ) : thread ? (
           <>
             {/* Thread header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b shrink-0">
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="h-9 w-9 rounded-full bg-primary/10 text-primary text-xs font-semibold flex items-center justify-center shrink-0">
-                  {getInitials(thread.conversation.customer_name, thread.conversation.customer_email)}
-                </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold truncate">
-                    {getDisplayName(thread.conversation.customer_name, thread.conversation.customer_email)}
-                  </p>
-                  {thread.conversation.customer_email && (
-                    <p className="text-xs text-muted-foreground truncate">
-                      {thread.conversation.customer_email}
-                    </p>
-                  )}
-                </div>
+            <div className="flex items-center gap-3 px-4 py-3 border-b shrink-0 min-w-0">
+              {/* Mobile back button */}
+              <button
+                onClick={goBackToList}
+                className="md:hidden shrink-0 p-1.5 -ml-1 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                aria-label="Back to list"
+              >
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+
+              <div className="h-9 w-9 rounded-full bg-violet-100 dark:bg-violet-900/40 text-violet-700 dark:text-violet-300 text-xs font-semibold flex items-center justify-center shrink-0">
+                {getInitials(thread.conversation.customer_name, thread.conversation.customer_email)}
               </div>
+
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold truncate">
+                  {getDisplayName(thread.conversation.customer_name, thread.conversation.customer_email)}
+                </p>
+                {thread.conversation.customer_email && (
+                  <p className="text-xs text-muted-foreground truncate">{thread.conversation.customer_email}</p>
+                )}
+              </div>
+
               <div className="flex items-center gap-2 shrink-0">
-                <Badge
-                  className={cn(
-                    "capitalize",
-                    thread.conversation.status === "active"
-                      ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-50"
-                      : "bg-slate-50 text-slate-500 border-slate-200 hover:bg-slate-50"
-                  )}
-                >
+                <Badge className={cn(
+                  "capitalize text-xs",
+                  thread.conversation.status === "active"
+                    ? "bg-violet-50 text-violet-700 border-violet-200 hover:bg-violet-50 dark:bg-violet-950/40 dark:text-violet-400 dark:border-violet-800"
+                    : "bg-slate-50 text-slate-500 border-slate-200 hover:bg-slate-50"
+                )}>
                   {thread.conversation.status}
                 </Badge>
-                <span className="text-xs text-muted-foreground">
+                <span className="hidden sm:block text-xs text-muted-foreground whitespace-nowrap">
                   {formatFull(thread.conversation.created_at)}
                 </span>
               </div>
             </div>
 
             {/* Messages */}
-            <ScrollArea className="flex-1 px-6 py-4">
+            <ScrollArea className="flex-1 px-4 py-4">
               {thread.messages.length === 0 ? (
                 <div className="flex justify-center py-8">
                   <p className="text-sm text-muted-foreground italic">No messages in this conversation</p>
@@ -413,22 +405,15 @@ function ConversationsInner() {
                 <div className="space-y-3">
                   {thread.messages.map((msg, i) => {
                     const prevMsg = thread.messages[i - 1];
-                    const showDateSep =
-                      !prevMsg ||
-                      new Date(msg.created_at).toDateString() !==
-                        new Date(prevMsg.created_at).toDateString();
-
+                    const showDateSep = !prevMsg ||
+                      new Date(msg.created_at).toDateString() !== new Date(prevMsg.created_at).toDateString();
                     return (
                       <div key={msg.id}>
                         {showDateSep && (
                           <div className="flex items-center gap-3 my-4">
                             <Separator className="flex-1" />
                             <span className="text-xs text-muted-foreground whitespace-nowrap">
-                              {new Date(msg.created_at).toLocaleDateString([], {
-                                weekday: "long",
-                                month: "short",
-                                day: "numeric",
-                              })}
+                              {new Date(msg.created_at).toLocaleDateString([], { weekday: "long", month: "short", day: "numeric" })}
                             </span>
                             <Separator className="flex-1" />
                           </div>
