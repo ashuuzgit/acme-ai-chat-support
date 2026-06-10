@@ -1,0 +1,404 @@
+Acme Cloud — Customer Support Knowledge Base
+=============================================
+Last updated: June 2026
+Version: 3.2
+
+---
+
+SECTION 1: COMPANY OVERVIEW
+---
+
+Acme Cloud is a cloud-based project management and collaboration platform designed for
+teams of all sizes. We help businesses plan, track, and ship work faster using AI-assisted
+workflows, real-time collaboration, and powerful reporting tools.
+
+Founded in 2019, Acme Cloud serves over 15,000 businesses in 42 countries. Our platform is
+available as a web application, iOS app, and Android app.
+
+Core products:
+- Acme Cloud Core: Task and project management
+- Acme Cloud Reports: Advanced analytics and dashboards
+- Acme Cloud Automations: Workflow automation engine
+- Acme Cloud AI: AI-powered task suggestions and summaries (beta)
+
+---
+
+SECTION 2: PRICING PLANS
+---
+
+We offer four pricing tiers:
+
+FREE PLAN — $0/month
+- Up to 5 team members
+- 3 active projects
+- 5 GB storage
+- Basic reporting
+- Community support only
+- No credit card required
+
+STARTER PLAN — $12 per user per month (billed annually) / $15 per user per month (billed monthly)
+- Up to 25 team members
+- Unlimited projects
+- 50 GB storage
+- Advanced reporting
+- Email support (response within 48 hours)
+- API access (1,000 calls/day)
+
+BUSINESS PLAN — $28 per user per month (billed annually) / $35 per user per month (billed monthly)
+- Unlimited team members
+- Unlimited projects
+- 500 GB storage
+- Full analytics suite
+- Priority email and chat support (response within 4 hours)
+- API access (50,000 calls/day)
+- Custom roles and permissions
+- SSO (Single Sign-On) support
+- Audit logs
+
+ENTERPRISE PLAN — Custom pricing
+- Everything in Business
+- Dedicated account manager
+- SLA guarantee (99.99% uptime)
+- Unlimited API calls
+- On-premises deployment option
+- Custom integrations
+- Phone support 24/7
+- SOC 2 Type II compliant
+
+Annual billing saves approximately 20% compared to monthly billing.
+Volume discounts are available for 100+ users. Contact sales@acmecloud.com for a quote.
+
+---
+
+SECTION 3: FREE TRIAL
+---
+
+All paid plans include a 14-day free trial. No credit card is required to start the trial.
+
+During the trial:
+- You get full access to all Business Plan features
+- You can invite unlimited team members
+- Your data is preserved if you upgrade after the trial ends
+- You will receive reminder emails at 7 days and 1 day before expiry
+
+To start a trial, visit acmecloud.com/trial and create an account.
+
+If your trial expires without upgrading, your account moves to the Free plan automatically.
+You will NOT lose your data — projects and tasks are archived and restored upon upgrade.
+
+---
+
+SECTION 4: BILLING AND PAYMENTS
+---
+
+Accepted payment methods:
+- All major credit and debit cards (Visa, Mastercard, American Express, Discover)
+- PayPal
+- Bank transfer (Enterprise plans only, invoiced quarterly)
+- Purchase orders (Enterprise plans only)
+
+Billing cycles:
+- Monthly plans: Charged on the same date each month (the date you first subscribed)
+- Annual plans: Charged once per year on your subscription anniversary
+
+Invoices are emailed automatically to the billing email on your account. You can also
+download past invoices from Settings > Billing > Invoice History.
+
+If a payment fails:
+- We retry the charge after 3 days, then again after 7 days
+- Your account is not suspended until after the second failed retry
+- You will receive email notifications for each failed attempt
+- To update your payment method, go to Settings > Billing > Payment Methods
+
+Currency: All prices are listed and charged in USD. Currency conversion is handled by your
+card issuer or PayPal.
+
+---
+
+SECTION 5: REFUND POLICY
+---
+
+MONTHLY PLANS
+Monthly subscriptions are not eligible for refunds once the billing period has started.
+However, if you cancel before your next billing date, you will retain access for the
+remainder of your current billing period.
+
+ANNUAL PLANS
+Annual subscriptions are eligible for a pro-rated refund within 30 days of the annual
+billing date. After 30 days, no refund is issued but you retain access until the end of
+the annual period.
+
+Example: If you paid $336/year ($28 x 12 months) and request a refund after 2 months,
+you are eligible for a refund of approximately $280 (10 months remaining).
+
+EXCEPTIONS (no refunds under any circumstances):
+- Accounts suspended for terms of service violations
+- Promotional or discounted pricing plans
+- Add-on purchases (storage upgrades, extra API quotas)
+
+HOW TO REQUEST A REFUND:
+Email billing@acmecloud.com with subject "Refund Request - [your account email]" and
+include:
+- Your account email
+- Your reason for requesting a refund
+- Your invoice number (found in Settings > Billing)
+
+Refunds are processed within 5–10 business days to your original payment method.
+
+---
+
+SECTION 6: CANCELLATION
+---
+
+You can cancel your subscription at any time from Settings > Billing > Cancel Plan.
+
+When you cancel:
+- Your access continues until the end of the current billing period
+- No further charges are made
+- Your data is retained for 90 days after cancellation, then permanently deleted
+- You can re-subscribe at any time to restore your data within the 90-day window
+
+To pause instead of cancel: Business and Enterprise plans support a 1-month pause (once
+per year). Contact support to activate a pause.
+
+---
+
+SECTION 7: ACCOUNT MANAGEMENT
+---
+
+CHANGING YOUR EMAIL ADDRESS
+Go to Settings > Profile > Email. A verification link will be sent to your new email.
+Your old email remains active until the new one is verified.
+
+CHANGING YOUR PASSWORD
+Go to Settings > Security > Change Password. You will need your current password.
+If you forgot your password, use the "Forgot Password" link on the login page.
+
+TWO-FACTOR AUTHENTICATION (2FA)
+We strongly recommend enabling 2FA. Supported methods:
+- Authenticator apps (Google Authenticator, Authy, 1Password)
+- SMS (available on Starter and above)
+- Hardware security keys like YubiKey (Business and Enterprise only)
+
+Enable 2FA at Settings > Security > Two-Factor Authentication.
+
+DELETING YOUR ACCOUNT
+Account deletion is permanent and cannot be undone. To delete your account:
+1. Cancel your subscription first (if on a paid plan)
+2. Go to Settings > Account > Delete Account
+3. Confirm by typing your email address
+
+All data (projects, tasks, files, comments) will be permanently deleted within 30 days.
+
+---
+
+SECTION 8: TECHNICAL REQUIREMENTS
+---
+
+BROWSER SUPPORT
+Acme Cloud works on all modern browsers:
+- Google Chrome 90+
+- Mozilla Firefox 88+
+- Apple Safari 14+
+- Microsoft Edge 90+
+- Opera 76+
+
+Internet Explorer is not supported.
+
+MOBILE APPS
+- iOS: Requires iOS 14 or later (iPhone 6s and newer)
+- Android: Requires Android 8.0 (Oreo) or later
+
+INTERNET CONNECTION
+A stable internet connection is required. Acme Cloud does not support full offline mode.
+However, the mobile apps support viewing (read-only) of recently accessed content while
+offline, syncing when reconnected.
+
+STORAGE INTEGRATIONS
+Acme Cloud integrates with:
+- Google Drive
+- Dropbox
+- OneDrive / SharePoint
+- Box
+
+FILE UPLOAD LIMITS
+- Free plan: 10 MB per file, 5 GB total
+- Starter: 100 MB per file, 50 GB total
+- Business: 250 MB per file, 500 GB total
+- Enterprise: 2 GB per file, unlimited total
+
+---
+
+SECTION 9: FEATURES AND USAGE
+---
+
+PROJECTS AND TASKS
+- Create projects with multiple views: List, Board (Kanban), Calendar, Gantt, and Timeline
+- Assign tasks to multiple team members
+- Set due dates, priorities (Urgent, High, Medium, Low), and custom labels
+- Add subtasks, dependencies, and estimated time
+- Attach files, links, and comments to any task
+
+AUTOMATIONS (Business and above)
+Automate repetitive actions with triggers and conditions:
+- "When a task is marked complete → notify the project owner via email"
+- "When due date is 2 days away → send Slack notification"
+- "When priority is Urgent → assign to team lead"
+
+Up to 1,000 automation runs per month on Business; unlimited on Enterprise.
+
+REPORTING
+- Workload view: see each team member's task load
+- Burndown charts for sprint planning
+- Time tracking reports
+- Custom dashboards (Business and above)
+
+INTEGRATIONS
+Natively integrates with:
+- Slack (send notifications to channels)
+- GitHub and GitLab (link commits and PRs to tasks)
+- Jira (two-way sync)
+- Zapier (connect 5,000+ apps)
+- Webhooks (send events to any URL)
+
+API
+REST API is available on Starter and above. API keys are generated at Settings > API.
+Full documentation: docs.acmecloud.com/api
+
+---
+
+SECTION 10: SECURITY AND COMPLIANCE
+---
+
+DATA STORAGE
+All data is stored on AWS servers in the US (us-east-1) by default.
+Enterprise customers can choose EU (eu-west-1) or Asia-Pacific (ap-southeast-1) regions.
+
+ENCRYPTION
+- Data in transit: TLS 1.2 and 1.3
+- Data at rest: AES-256 encryption
+
+COMPLIANCE
+- SOC 2 Type II certified (Enterprise plan)
+- GDPR compliant (data processing agreements available)
+- CCPA compliant
+- HIPAA compliant (Enterprise plan with Business Associate Agreement)
+
+DATA BACKUP
+Automated daily backups with 30-day retention. Backups are stored in geographically
+separate data centres.
+
+GDPR / DATA REQUESTS
+To request an export of your data, go to Settings > Privacy > Export My Data.
+To request deletion under GDPR, email privacy@acmecloud.com.
+
+---
+
+SECTION 11: COMMON ISSUES AND TROUBLESHOOTING
+---
+
+CANNOT LOG IN
+1. Check that Caps Lock is off
+2. Try "Forgot Password" to reset
+3. If using SSO, contact your IT admin
+4. If your account was suspended, you will see a specific "Account suspended" message — contact billing@acmecloud.com
+5. Clear browser cache and cookies, then try again
+6. Try an incognito/private browser window
+
+SLOW PERFORMANCE
+1. Check your internet connection speed (minimum 5 Mbps recommended)
+2. Try a different browser
+3. Disable browser extensions (especially ad blockers)
+4. Clear browser cache
+5. Check our status page at status.acmecloud.com for any ongoing incidents
+
+CANNOT UPLOAD FILES
+- Check that the file is within your plan's size limit
+- Supported file types: PDF, DOCX, XLSX, PNG, JPG, GIF, MP4, ZIP, and most common formats
+- If the upload fails repeatedly, try a different browser
+- For files over 100MB, use our desktop upload tool (download at acmecloud.com/desktop)
+
+NOTIFICATIONS NOT WORKING
+1. Check your notification preferences at Settings > Notifications
+2. For email notifications, check your spam folder and whitelist notifications@acmecloud.com
+3. For Slack notifications, ensure the Acme Cloud Slack app is installed in your workspace
+4. Mobile push notifications require the app to have notification permission in your device settings
+
+LOST ACCESS TO MY ACCOUNT (2FA ISSUE)
+If you cannot access your 2FA device:
+1. Use a backup code (generated when you set up 2FA, stored in Settings > Security)
+2. If you don't have backup codes, contact support with proof of identity
+
+---
+
+SECTION 12: CONTACT AND SUPPORT
+---
+
+SUPPORT CHANNELS
+- Help Center: help.acmecloud.com (articles, tutorials, FAQs)
+- Email Support: support@acmecloud.com
+- Live Chat: Available in-app (bottom-right chat icon) — Business and Enterprise only
+- Phone Support: +1-800-ACME-CLD (Enterprise only, 24/7)
+- Community Forum: community.acmecloud.com
+
+RESPONSE TIME SLAs
+- Free plan: Community forum only, no guaranteed response time
+- Starter: Within 48 business hours
+- Business: Within 4 hours (during business hours, Mon–Fri 9am–6pm UTC)
+- Enterprise: Within 1 hour (24/7)
+
+SALES INQUIRIES
+For new business, partnerships, or custom pricing:
+Email: sales@acmecloud.com
+Phone: +1-800-ACME-SALES
+Book a demo: acmecloud.com/demo
+
+BILLING QUESTIONS
+Email: billing@acmecloud.com
+For refund requests, include your invoice number.
+
+PRIVACY AND LEGAL
+Privacy policy: acmecloud.com/privacy
+Terms of service: acmecloud.com/terms
+Data processing agreement: acmecloud.com/dpa
+Legal inquiries: legal@acmecloud.com
+
+MAILING ADDRESS
+Acme Cloud Inc.
+340 Pine Street, Suite 800
+San Francisco, CA 94104
+United States
+
+STATUS PAGE
+Check real-time system status and incident history at: status.acmecloud.com
+Subscribe to status updates via email or RSS.
+
+---
+
+SECTION 13: ONBOARDING AND GETTING STARTED
+---
+
+QUICK START GUIDE
+1. Create your account at acmecloud.com/signup (free, no credit card needed)
+2. Create your first project (click "+ New Project" from the dashboard)
+3. Add your team members (Settings > Team > Invite Members)
+4. Import existing data from Jira, Trello, Asana, or CSV (Settings > Imports)
+5. Install integrations (Settings > Integrations)
+6. Set up automations to save time (Project > Automations)
+
+VIDEO TUTORIALS
+Full onboarding video series available at: acmecloud.com/learn
+Topics include:
+- 5-minute quick start
+- Setting up your first project
+- Managing your team's workload
+- Building automation workflows
+- Using the reporting suite
+
+ONBOARDING SUPPORT
+New Business and Enterprise accounts get a free 1-hour onboarding call with a Customer
+Success Manager. Book at acmecloud.com/onboarding.
+
+---
+
+END OF KNOWLEDGE BASE
