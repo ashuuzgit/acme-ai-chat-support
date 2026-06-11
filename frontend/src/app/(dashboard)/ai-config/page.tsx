@@ -85,12 +85,11 @@ const PERSONALITIES: {
 
 const DEFAULT_RULES = ["refund", "legal", "angry", "human agent"];
 
-// ─── Preview panel (shared between desktop inline + mobile dialog) ────────────
+// ─── Preview panel ────────────────────────────────────────────────────────────
 
 function PreviewChat({ p, botName }: { p: typeof PERSONALITIES[number]; botName: string }) {
   return (
     <div className="flex flex-col h-full">
-      {/* Fake chat header */}
       <div className="flex items-center gap-2.5 border-b bg-muted/30 px-4 py-3 shrink-0">
         <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-900 text-white text-xs font-bold">
           {(botName?.[0] ?? "S").toUpperCase()}
@@ -101,8 +100,6 @@ function PreviewChat({ p, botName }: { p: typeof PERSONALITIES[number]; botName:
         </div>
         <span className="ml-auto h-2 w-2 shrink-0 rounded-full bg-violet-400 animate-pulse" />
       </div>
-
-      {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
         {p.preview.map((msg, i) => (
           <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
@@ -117,8 +114,6 @@ function PreviewChat({ p, botName }: { p: typeof PERSONALITIES[number]; botName:
           </div>
         ))}
       </div>
-
-      {/* Fake input bar */}
       <div className="border-t px-4 py-3 shrink-0">
         <div className="flex items-center gap-2 rounded-lg border bg-background px-3 py-2">
           <span className="flex-1 text-xs text-muted-foreground/60 select-none">Type a message…</span>
@@ -134,20 +129,12 @@ function PreviewChat({ p, botName }: { p: typeof PERSONALITIES[number]; botName:
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function AiConfigPage() {
-  const [loading, setLoading]         = useState(true);
-  const [loadError, setLoadError]     = useState<string | null>(null);
-  const [ruleInput, setRuleInput]     = useState("");
-  const [preview, setPreview]         = useState<typeof PERSONALITIES[number] | null>(null);
-  const [isMobile, setIsMobile]       = useState(false);
-  const [businessId, setBusinessId]   = useState<string | null>(null);
-  const [copied, setCopied]           = useState(false);
-
-  useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth < 768);
-    check();
-    window.addEventListener("resize", check);
-    return () => window.removeEventListener("resize", check);
-  }, []);
+  const [loading, setLoading]       = useState(true);
+  const [loadError, setLoadError]   = useState<string | null>(null);
+  const [ruleInput, setRuleInput]   = useState("");
+  const [preview, setPreview]       = useState<typeof PERSONALITIES[number] | null>(null);
+  const [businessId, setBusinessId] = useState<string | null>(null);
+  const [copied, setCopied]         = useState(false);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -160,8 +147,8 @@ export default function AiConfigPage() {
   });
 
   const { control, handleSubmit, watch, setValue, formState } = form;
-  const escalationRules = watch("escalation_rules");
-  const botName         = watch("bot_name");
+  const escalationRules    = watch("escalation_rules");
+  const botName            = watch("bot_name");
   const currentPersonality = watch("personality");
 
   useEffect(() => {
@@ -180,9 +167,7 @@ export default function AiConfigPage() {
           personality: data.personality,
           escalation_rules: data.escalation_rules?.length ? data.escalation_rules : DEFAULT_RULES,
         });
-        // Auto-open preview for the loaded personality on desktop
-        const loaded = PERSONALITIES.find((p) => p.value === data.personality);
-        if (loaded) setPreview(loaded);
+        // Don't auto-open preview — only open on explicit user click
       })
       .catch(() => setLoadError("Could not load config. Using defaults — your changes will still save."))
       .finally(() => setLoading(false));
@@ -222,37 +207,41 @@ export default function AiConfigPage() {
     );
   }
 
+  const widgetUrl = businessId
+    ? `${process.env.NEXT_PUBLIC_APP_URL}/widget/${businessId}`
+    : null;
+
   return (
-    // Outer flex: form on left, preview panel on right (desktop only)
     <div className="flex gap-6 items-start max-w-5xl mx-auto">
 
-      {/* ── Form ──────────────────────────────────────────────────────────── */}
-      <form
-        onSubmit={handleSubmit(onSubmit)}
-        className="flex-1 min-w-0 space-y-6 transition-all duration-300"
-      >
-        {/* Header */}
+      {/* ── Left column: form + widget card ───────────────────────────────── */}
+      <div className="flex-1 min-w-0 space-y-6">
+
+        {/* Page header */}
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">AI Configuration</h1>
             <p className="text-sm text-muted-foreground mt-1">Customise your bot&apos;s identity and behaviour</p>
           </div>
-          <Button type="submit" disabled={formState.isSubmitting}>
+          <Button
+            type="button"
+            onClick={handleSubmit(onSubmit)}
+            disabled={formState.isSubmitting}
+          >
             {formState.isSubmitting ? "Saving…" : "Save changes"}
           </Button>
         </div>
 
-        {/* Inline error */}
         {loadError && (
-          <div className="flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-400">
-            <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-400">
+            <svg className="h-4 w-4 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
             </svg>
             <span>{loadError}</span>
           </div>
         )}
 
-        {/* Identity */}
+        {/* Bot Identity */}
         <Card>
           <CardHeader className="pb-4">
             <CardTitle className="text-base">Bot Identity</CardTitle>
@@ -293,8 +282,8 @@ export default function AiConfigPage() {
           <CardHeader className="pb-4">
             <CardTitle className="text-base">Personality</CardTitle>
             <CardDescription>
-              Click a style to select it and preview the tone
-              <span className="hidden md:inline"> on the right</span>
+              Select a style to set the bot&apos;s tone
+              <span className="hidden md:inline"> — click to preview on the right</span>
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -330,8 +319,6 @@ export default function AiConfigPage() {
                           {p.label}
                         </p>
                         <p className="mt-1 text-xs text-muted-foreground leading-snug">{p.description}</p>
-
-                        {/* Mobile-only: "Tap to preview" hint */}
                         <p className="mt-2 text-[10px] text-muted-foreground/50 md:hidden">Tap to preview ↗</p>
                       </button>
                     );
@@ -342,7 +329,7 @@ export default function AiConfigPage() {
           </CardContent>
         </Card>
 
-        {/* Escalation rules */}
+        {/* Escalation Rules */}
         <Card>
           <CardHeader className="pb-4">
             <CardTitle className="text-base">Escalation Rules</CardTitle>
@@ -379,18 +366,60 @@ export default function AiConfigPage() {
                 value={ruleInput}
                 onChange={(e) => setRuleInput(e.target.value)}
                 onKeyDown={onRuleKeyDown}
-                className="flex-1"
+                className="flex-1 min-w-0"
               />
-              <Button type="button" variant="outline" onClick={addRule} disabled={!ruleInput.trim()}>
+              <Button type="button" variant="outline" onClick={addRule} disabled={!ruleInput.trim()} className="shrink-0">
                 Add
               </Button>
             </div>
             <p className="text-xs text-muted-foreground">Press Enter or click Add. Keywords are matched case-insensitively.</p>
           </CardContent>
         </Card>
-      </form>
 
-      {/* ── Desktop preview panel ─────────────────────────────────────────── */}
+        {/* Widget Embed — inside left column so it's properly constrained on all screen sizes */}
+        {businessId && widgetUrl && (
+          <Card>
+            <CardHeader className="pb-4">
+              <CardTitle className="text-base">Widget</CardTitle>
+              <CardDescription>Share this link or embed the widget on any website</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <p className="text-xs text-muted-foreground mb-1.5 font-medium">Direct widget URL</p>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 min-w-0 text-xs bg-muted px-3 py-2 rounded-md truncate block">
+                    {widgetUrl}
+                  </code>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="shrink-0 h-8 text-xs"
+                    onClick={() => {
+                      navigator.clipboard.writeText(widgetUrl);
+                      setCopied(true);
+                      setTimeout(() => setCopied(false), 2000);
+                    }}
+                  >
+                    {copied ? "Copied!" : "Copy"}
+                  </Button>
+                </div>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground mb-1.5 font-medium">Embed snippet</p>
+                <pre className="text-xs bg-muted px-3 py-2 rounded-md overflow-x-auto break-all whitespace-pre-wrap">{`<iframe\n  src="${widgetUrl}"\n  width="400"\n  height="600"\n  frameborder="0"\n/>`}</pre>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground mb-1.5 font-medium">Business ID</p>
+                <code className="text-xs bg-muted px-3 py-2 rounded-md block break-all">{businessId}</code>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+      </div>
+
+      {/* ── Right column: desktop sticky preview panel ────────────────────── */}
       <div
         className={`hidden md:flex flex-col rounded-2xl border bg-card overflow-hidden sticky top-6
           transition-all duration-300 ease-in-out shrink-0
@@ -399,7 +428,6 @@ export default function AiConfigPage() {
       >
         {preview && (
           <>
-            {/* Panel header */}
             <div className="flex items-center justify-between px-4 py-3 border-b shrink-0">
               <div className="flex items-center gap-2 min-w-0">
                 <span className="h-2 w-2 rounded-full bg-violet-400 shrink-0" />
@@ -422,13 +450,12 @@ export default function AiConfigPage() {
         )}
       </div>
 
-      {/* ── Mobile preview dialog — only mounted on small screens to avoid backdrop bleed */}
-      {isMobile && (
+      {/* ── Mobile preview dialog ─────────────────────────────────────────── */}
       <Dialog
         open={!!preview}
         onOpenChange={(o) => { if (!o) setPreview(null); }}
       >
-        <DialogContent className="max-w-sm w-[calc(100vw-2rem)] p-0 overflow-hidden rounded-2xl">
+        <DialogContent className="md:hidden max-w-[calc(100vw-2rem)] w-full p-0 overflow-hidden rounded-2xl">
           <DialogHeader className="px-5 pt-5 pb-0">
             <DialogTitle className="text-base flex items-center gap-2">
               <span className="h-2 w-2 rounded-full bg-violet-400 inline-block" />
@@ -436,7 +463,7 @@ export default function AiConfigPage() {
             </DialogTitle>
             <p className="text-xs text-muted-foreground mt-0.5">{preview?.description}</p>
           </DialogHeader>
-          <div style={{ height: "360px" }} className="mx-5 my-4 rounded-xl border overflow-hidden flex flex-col">
+          <div style={{ height: "360px" }} className="mx-4 my-4 rounded-xl border overflow-hidden flex flex-col">
             {preview && <PreviewChat p={preview} botName={botName} />}
           </div>
           <div className="px-5 pb-5 flex justify-end">
@@ -446,47 +473,6 @@ export default function AiConfigPage() {
           </div>
         </DialogContent>
       </Dialog>
-      )}
-
-      {/* Widget Embed */}
-      {businessId && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Widget</CardTitle>
-            <CardDescription>Share this link or embed the widget on any website</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <p className="text-xs text-muted-foreground mb-1.5 font-medium">Direct widget URL</p>
-              <div className="flex items-center gap-2">
-                <code className="flex-1 text-xs bg-muted px-3 py-2 rounded-md truncate">
-                  {process.env.NEXT_PUBLIC_APP_URL}/widget/{businessId}
-                </code>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="shrink-0 h-8 text-xs"
-                  onClick={() => {
-                    navigator.clipboard.writeText(`${process.env.NEXT_PUBLIC_APP_URL}/widget/${businessId}`);
-                    setCopied(true);
-                    setTimeout(() => setCopied(false), 2000);
-                  }}
-                >
-                  {copied ? "Copied!" : "Copy"}
-                </Button>
-              </div>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground mb-1.5 font-medium">Embed snippet</p>
-              <pre className="text-xs bg-muted px-3 py-2 rounded-md overflow-x-auto whitespace-pre-wrap">{`<iframe\n  src="${process.env.NEXT_PUBLIC_APP_URL}/widget/${businessId}"\n  width="400"\n  height="600"\n  frameborder="0"\n/>`}</pre>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground mb-1.5 font-medium">Your business ID</p>
-              <code className="text-xs bg-muted px-3 py-2 rounded-md block">{businessId}</code>
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
     </div>
   );
