@@ -1,0 +1,90 @@
+Acme Software – Customer Support FAQ
+=====================================
+
+PRICING & PLANS
+---------------
+
+Q: What plans does Acme Software offer?
+A: Acme Software offers three plans: Starter ($29/month, up to 3 users), Pro ($79/month, up to 15 users), and Enterprise (custom pricing, unlimited users). All plans include a 14-day free trial with no credit card required.
+
+Q: Can I change my plan at any time?
+A: Yes. You can upgrade or downgrade your plan at any time from Settings > Billing. Upgrades take effect immediately and are prorated. Downgrades take effect at the start of your next billing cycle.
+
+Q: Is there a discount for annual billing?
+A: Yes. Paying annually gives you 2 months free — equivalent to a 17% discount. You can switch to annual billing from Settings > Billing > Billing Cycle.
+
+Q: Do you offer discounts for nonprofits or startups?
+A: Yes. Nonprofits and early-stage startups (under $500k ARR) qualify for a 40% discount. Email billing@acmesoftware.com with proof of eligibility and we will apply the discount to your account within 2 business days.
+
+Q: What payment methods do you accept?
+A: We accept all major credit and debit cards (Visa, Mastercard, Amex, Discover) and ACH bank transfers for annual Enterprise plans. We do not currently accept PayPal or cryptocurrency.
+
+
+REFUNDS & CANCELLATIONS
+------------------------
+
+Q: What is your refund policy?
+A: We offer a full refund within 14 days of your first payment if you are not satisfied. After 14 days, refunds are not available for monthly plans. Annual plans can be refunded on a prorated basis within 30 days of payment.
+
+Q: How do I cancel my subscription?
+A: Go to Settings > Billing > Cancel Subscription. Your account will remain active until the end of your current billing period. You will not be charged again after cancellation.
+
+Q: Will I lose my data if I cancel?
+A: No. Your data is retained for 90 days after cancellation. You can export all your data at any time from Settings > Data Export before or after cancelling.
+
+Q: I was charged after cancelling — what should I do?
+A: If you were charged after cancelling, please contact billing@acmesoftware.com with your account email and the charge date. We will investigate and issue a full refund within 3–5 business days if the charge was in error.
+
+
+ACCOUNT ISSUES
+--------------
+
+Q: I forgot my password. How do I reset it?
+A: Click "Forgot password" on the login page and enter your account email. You will receive a password reset link within 5 minutes. Check your spam folder if you do not see it.
+
+Q: How do I add or remove users from my account?
+A: Go to Settings > Team > Invite Members. You can invite users by email. To remove a user, click the three-dot menu next to their name and select Remove. Removed users lose access immediately.
+
+Q: My account has been locked. What should I do?
+A: Accounts are temporarily locked after 10 consecutive failed login attempts. Wait 30 minutes and try again, or contact support@acmesoftware.com to unlock it manually.
+
+Q: How do I change the email address on my account?
+A: Go to Settings > Profile > Email. You will need to verify the new email address before the change takes effect. Your old email will receive a notification.
+
+Q: Can I transfer my account to someone else?
+A: Yes. The account owner can transfer ownership from Settings > Team > Transfer Ownership. The new owner must already be a member of the account.
+
+
+INTEGRATIONS
+------------
+
+Q: Which tools does Acme Software integrate with?
+A: Acme Software integrates with Slack, Microsoft Teams, Google Workspace, Zapier, HubSpot, Salesforce, Jira, and GitHub. API access is available on Pro and Enterprise plans.
+
+Q: How do I connect Slack to my Acme account?
+A: Go to Settings > Integrations > Slack and click Connect. You will be redirected to Slack to authorise the connection. Select the workspace and channel you want to use, then click Allow.
+
+Q: Is there a public API I can use to build custom integrations?
+A: Yes. The Acme REST API is available on Pro and Enterprise plans. Full API documentation is at docs.acmesoftware.com/api. API keys can be generated from Settings > API Keys.
+
+Q: Why is my Zapier integration not triggering?
+A: First, check that your Zapier zap is turned on. Then verify the trigger event matches the action in Acme. If the issue persists, try disconnecting and reconnecting the integration from Settings > Integrations > Zapier.
+
+
+BILLING
+-------
+
+Q: Where can I find my invoices?
+A: All invoices are available under Settings > Billing > Invoice History. Each invoice can be downloaded as a PDF. Invoices are also emailed to the billing contact on file.
+
+Q: How do I update my billing information?
+A: Go to Settings > Billing > Payment Method and click Update. You can replace the card on file or change the billing address. Changes take effect on your next billing cycle.
+
+Q: Why did my payment fail?
+A: Common reasons include an expired card, insufficient funds, or a bank security block. Update your payment method under Settings > Billing > Payment Method. If the problem persists, contact your bank or reach out to billing@acmesoftware.com.
+
+Q: What happens if my payment fails?
+A: We will retry the payment 3 times over 7 days. During this period your account remains active. If all retries fail, your account will be downgraded to a read-only state until the payment issue is resolved.
+
+Q: Is my billing information secure?
+A: Yes. All payment data is handled by Stripe, a PCI DSS Level 1 certified payment processor. Acme Software never stores your full card number on our servers.
