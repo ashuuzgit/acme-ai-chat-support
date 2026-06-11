@@ -3,8 +3,16 @@ import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import dotenv from "dotenv";
+import { rateLimit } from "express-rate-limit";
 
 dotenv.config();
+
+const REQUIRED_ENV = ["SUPABASE_URL", "SUPABASE_SERVICE_KEY", "GROQ_API_KEY", "JWT_SECRET"];
+const missing = REQUIRED_ENV.filter((k) => !process.env[k]);
+if (missing.length) {
+  console.error(`[startup] Missing required env vars: ${missing.join(", ")}`);
+  process.exit(1);
+}
 
 import authRoutes from "./routes/auth.routes";
 import documentRoutes from "./routes/documents.routes";
@@ -31,7 +39,35 @@ const PORT = process.env.PORT ?? 5000;
 
 app.use(helmet());
 app.use(cors({ origin: process.env.CORS_ORIGIN ?? "http://localhost:3000" }));
-app.use(express.json());
+app.use(express.json({ limit: "1mb" }));
+
+// ── Rate limiters ─────────────────────────────────────────────────────────────
+// Auth: 10 attempts per 15 min per IP (brute-force protection)
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many attempts, please try again later" },
+});
+
+// Chat: 30 messages per minute per IP (widget abuse prevention)
+const chatLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many messages, please slow down" },
+});
+
+// Analytics / dashboard: 60 req per minute per IP
+const analyticsLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many requests" },
+});
 
 app.get("/health", (_req, res) => {
   res.json({ status: "ok" });
@@ -41,13 +77,13 @@ app.get("/api/health", (_req, res) => {
   res.json({ status: "ok" });
 });
 
-app.use("/api/auth", authRoutes);
-app.use("/api/documents", documentRoutes);
-app.use("/api/chat", chatRoutes);
-app.use("/api/config", configRoutes);
-app.use("/api/tickets", ticketsRoutes);
+app.use("/api/auth",          authLimiter,      authRoutes);
+app.use("/api/documents",     documentRoutes);
+app.use("/api/chat",          chatLimiter,      chatRoutes);
+app.use("/api/config",        configRoutes);
+app.use("/api/tickets",       ticketsRoutes);
 app.use("/api/conversations", conversationsRoutes);
-app.use("/api/analytics", analyticsRoutes);
+app.use("/api/analytics",     analyticsLimiter, analyticsRoutes);
 
 app.use(errorHandler);
 

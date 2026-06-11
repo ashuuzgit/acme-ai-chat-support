@@ -305,10 +305,14 @@ export default function WidgetPage({ params }: { params: { businessId: string } 
   }
 
   useEffect(() => {
-    fetch(`${API_URL}/api/chat/widget-config/${businessId}`)
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 20000);
+    fetch(`${API_URL}/api/chat/widget-config/${businessId}`, { signal: controller.signal })
       .then((r) => r.json())
       .then((data) => { if (data.error) throw new Error(); setConfig(data); })
-      .catch(() => setConfigError(true));
+      .catch(() => setConfigError(true))
+      .finally(() => clearTimeout(timeout));
+    return () => { controller.abort(); clearTimeout(timeout); };
   }, [businessId]);
 
   useEffect(() => {

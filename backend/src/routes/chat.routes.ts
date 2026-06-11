@@ -8,6 +8,8 @@ import { createTicket } from "../services/ticket.service";
 const router = Router();
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 // POST /api/chat  (public — customer-facing widget endpoint)
 router.post("/", async (req: Request, res: Response) => {
   const {
@@ -20,6 +22,16 @@ router.post("/", async (req: Request, res: Response) => {
 
   if (!message || !businessId) {
     res.status(400).json({ error: "message and businessId are required" });
+    return;
+  }
+
+  if (!UUID_RE.test(String(businessId))) {
+    res.status(400).json({ error: "Invalid businessId" });
+    return;
+  }
+
+  if (typeof message !== "string" || message.length > 2000) {
+    res.status(400).json({ error: "message must be a string under 2000 characters" });
     return;
   }
 
@@ -135,6 +147,11 @@ router.post("/", async (req: Request, res: Response) => {
 // GET /api/chat/widget-config/:businessId  (public)
 router.get("/widget-config/:businessId", async (req: Request, res: Response) => {
   const { businessId } = req.params;
+
+  if (!UUID_RE.test(String(businessId))) {
+    res.status(400).json({ error: "Invalid businessId" });
+    return;
+  }
 
   const { data: config, error } = await supabase
     .from("ai_configs")

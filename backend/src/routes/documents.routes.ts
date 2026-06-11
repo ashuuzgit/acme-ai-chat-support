@@ -66,7 +66,10 @@ router.post("/upload", upload.single("file"), async (req: Request, res: Response
     .select()
     .single();
 
-  if (docError) throw docError;
+  if (docError) {
+    await supabase.storage.from("documents").remove([storagePath]);
+    throw docError;
+  }
 
   // Process in background — intentionally not awaited
   processDocument(document.id, businessId, file.path, fileType).finally(() =>

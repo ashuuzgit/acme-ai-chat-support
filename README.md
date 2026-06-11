@@ -107,20 +107,20 @@ A multi-tenant SaaS platform that lets any business deploy a branded AI customer
 ```bash
 cd backend
 cp .env.example .env
-# Fill in SUPABASE_URL, SUPABASE_SERVICE_KEY, GROQ_API_KEY, JWT_SECRET
+# Fill in all 4 required vars — server exits immediately at startup if any are missing
 npm install
 npm run dev
 # Server starts on http://localhost:5000
 ```
 
-**Required env vars:**
+**Required env vars** (server will refuse to start if any are missing):
 
 | Variable | Description |
 |----------|-------------|
 | `SUPABASE_URL` | Your Supabase project URL |
 | `SUPABASE_SERVICE_KEY` | Service role key (Settings → API in Supabase dashboard) |
 | `GROQ_API_KEY` | From console.groq.com |
-| `JWT_SECRET` | Any random 32+ character string |
+| `JWT_SECRET` | Random 32+ character string — use `openssl rand -hex 32` |
 | `CORS_ORIGIN` | Frontend URL (default: `http://localhost:3000`) |
 | `PORT` | Server port (default: `5000`) |
 
@@ -271,15 +271,33 @@ See [`/sample-data/faq.txt`](./sample-data/faq.txt) for a ready-to-upload FAQ do
 ### Backend → Railway
 
 1. Create a new Railway project, connect this GitHub repo, set root directory to `/backend`
-2. Add all env vars from `backend/.env.example`
+2. Add **all 4 required env vars** from `backend/.env.example` — the server will exit on startup if any are missing
 3. Railway detects the `Procfile` (`web: npm start`) and runs `npm run build` automatically
 4. Copy the generated Railway URL → set as `NEXT_PUBLIC_API_URL` in Vercel
+
+> **Cold start note:** Railway free tier sleeps after inactivity. The first request after sleep takes 10–30 s. Set up a keep-alive ping (e.g. via [cron-job.org](https://cron-job.org)) hitting `GET /api/health` every 4 minutes to prevent this.
 
 ### Frontend → Vercel
 
 1. Import repo into Vercel, set root directory to `/frontend`
 2. Add env vars: `NEXT_PUBLIC_API_URL` (Railway URL) and `NEXT_PUBLIC_APP_URL` (Vercel URL)
 3. Deploy — Vercel auto-detects Next.js
+
+---
+
+## Production Notes
+
+| Concern | Implementation |
+|---------|---------------|
+| **Rate limiting** | Auth: 10 req/15 min · Chat: 30 req/min · Analytics: 60 req/min (per IP) |
+| **Request size** | JSON body capped at 1 MB; file uploads capped at 20 MB |
+| **Message length** | Chat messages capped at 2 000 characters |
+| **Analytics caching** | In-memory cache with 5-minute TTL per business — prevents DB hammering on dashboard refreshes |
+| **Auth cookies** | `secure: true` set automatically when served over HTTPS |
+| **Env validation** | Server calls `process.exit(1)` at startup if any required env var is missing |
+| **Multi-tenancy** | Every DB query is scoped to `business_id` extracted from the JWT — cross-tenant data access is not possible |
+| **File uploads** | Allowed types: PDF, DOCX, TXT, MD only; MIME type checked server-side |
+| **SSE streaming** | Stream closed with `data: {error}` event on Groq failure — client always receives a terminal event |
 
 ---
 
@@ -334,12 +352,4 @@ ai-support-platform/
 
 ---
 
-## Expected Deliverables Checklist
 
-- [ ] Live Application URL (fill in above after deploying)
-- [x] GitHub Repository
-- [x] README.md with setup instructions
-- [x] Architecture diagram (ASCII, see above)
-- [x] Sample Knowledge Base Data (`/sample-data/faq.txt`)
-- [ ] Admin Credentials (register at `/register` or use demo account above)
-- [ ] Repository access granted to dev@gomagentic.com

@@ -5,101 +5,107 @@ import { verifyToken } from "../middleware/auth.middleware";
 const router = Router();
 router.use(verifyToken);
 
+// ── Simple in-memory cache (5-minute TTL per businessId per route) ────────────
+type CacheEntry = { data: unknown; expiresAt: number };
+const cache = new Map<string, CacheEntry>();
+const CACHE_TTL = 5 * 60 * 1000;
+
+function cacheGet(key: string): unknown | null {
+  const entry = cache.get(key);
+  if (!entry || Date.now() > entry.expiresAt) { cache.delete(key); return null; }
+  return entry.data;
+}
+function cacheSet(key: string, data: unknown) {
+  cache.set(key, { data, expiresAt: Date.now() + CACHE_TTL });
+}
+
 // GET /api/analytics/overview
 router.get("/overview", async (req: Request, res: Response) => {
   const { businessId } = req.user!;
+  const cacheKey = `overview:${businessId}`;
+  const cached = cacheGet(cacheKey);
+  if (cached) { res.json(cached); return; }
 
   const [
     { count: totalConvos },
     { data: messages },
     { count: totalTickets },
-    { count: escalatedTickets },
+    { count: resolvedTickets },
   ] = await Promise.all([
-    supabase
-      .from("conversations")
-      .select("*", { count: "exact", head: true })
-      .eq("business_id", businessId),
-    supabase
-      .from("messages")
-      .select("response_time_ms, conversation_id, created_at")
-      .eq("role", "assistant")
-      .not("response_time_ms", "is", null)
-      .order("created_at", { ascending: false })
-      .limit(500),
-    supabase
-      .from("tickets")
-      .select("*", { count: "exact", head: true })
-      .eq("business_id", businessId),
-    supabase
-      .from("tickets")
-      .select("*", { count: "exact", head: true })
-      .eq("business_id", businessId)
-      .in("status", ["resolved", "closed"]),
+    supabase.from("conversations").select("*", { count: "exact", head: true }).eq("business_id", businessId),
+    supabase.from("messages").select("response_time_ms").eq("role", "assistant").not("response_time_ms", "is", null).limit(500),
+    supabase.from("tickets").select("*", { count: "exact", head: true }).eq("business_id", businessId),
+    supabase.from("tickets").select("*", { count: "exact", head: true }).eq("business_id", businessId).in("status", ["resolved", "closed"]),
   ]);
 
   const avgResponseMs =
     messages && messages.length > 0
-      ? messages.reduce((sum: number, m: any) => sum + (m.response_time_ms ?? 0), 0) /
-        messages.length
+      ? messages.reduce((sum: number, m: any) => sum + (m.response_time_ms ?? 0), 0) / messages.length
       : 0;
 
-  // Conversations over last 7 days
-  const days: { date: string; conversations: number }[] = [];
-  for (let i = 6; i >= 0; i--) {
+  // 7-day conversation counts — run all in parallel
+  const dayBoundaries = Array.from({ length: 7 }, (_, i) => {
     const d = new Date();
-    d.setDate(d.getDate() - i);
-    const start = new Date(d);
-    start.setHours(0, 0, 0, 0);
-    const end = new Date(d);
-    end.setHours(23, 59, 59, 999);
+    d.setDate(d.getDate() - (6 - i));
+    const start = new Date(d); start.setHours(0, 0, 0, 0);
+    const end   = new Date(d); end.setHours(23, 59, 59, 999);
+    return {
+      label: d.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+      start: start.toISOString(),
+      end: end.toISOString(),
+    };
+  });
 
-    const { count } = await supabase
-      .from("conversations")
-      .select("*", { count: "exact", head: true })
-      .eq("business_id", businessId)
-      .gte("created_at", start.toISOString())
-      .lte("created_at", end.toISOString());
+  const dayCounts = await Promise.all(
+    dayBoundaries.map(({ start, end }) =>
+      supabase
+        .from("conversations")
+        .select("*", { count: "exact", head: true })
+        .eq("business_id", businessId)
+        .gte("created_at", start)
+        .lte("created_at", end)
+        .then(({ count }) => count ?? 0)
+    )
+  );
 
-    days.push({
-      date: d.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
-      conversations: count ?? 0,
-    });
-  }
+  const daily_conversations = dayBoundaries.map((d, i) => ({
+    date: d.label,
+    conversations: dayCounts[i],
+  }));
 
-  res.json({
+  const result = {
     total_conversations: totalConvos ?? 0,
     avg_response_ms: Math.round(avgResponseMs),
     resolution_rate:
       totalTickets && totalTickets > 0
-        ? Math.round(((escalatedTickets ?? 0) / totalTickets) * 100)
+        ? Math.round(((resolvedTickets ?? 0) / totalTickets) * 100)
         : 0,
     escalation_rate:
       totalConvos && totalConvos > 0
         ? Math.round(((totalTickets ?? 0) / totalConvos) * 100)
         : 0,
-    daily_conversations: days,
-  });
+    daily_conversations,
+  };
+
+  cacheSet(cacheKey, result);
+  res.json(result);
 });
 
 // GET /api/analytics/dashboard  — lightweight stat cards for the main dashboard
 router.get("/dashboard", async (req: Request, res: Response) => {
   const { businessId } = req.user!;
+  const cacheKey = `dashboard:${businessId}`;
+  const cached = cacheGet(cacheKey);
+  if (cached) { res.json(cached); return; }
 
-  // Build date boundaries for last 7 days
-  const days: { ymd: string; start: string; end: string }[] = [];
-  for (let i = 6; i >= 0; i--) {
+  const dayBoundaries = Array.from({ length: 7 }, (_, i) => {
     const d = new Date();
-    d.setDate(d.getDate() - i);
+    d.setDate(d.getDate() - (6 - i));
     const start = new Date(d); start.setHours(0, 0, 0, 0);
     const end   = new Date(d); end.setHours(23, 59, 59, 999);
-    days.push({
-      ymd:   d.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
-      start: start.toISOString(),
-      end:   end.toISOString(),
-    });
-  }
+    return { ymd: d.toLocaleDateString("en-US", { month: "short", day: "numeric" }), start: start.toISOString(), end: end.toISOString() };
+  });
 
-  // Totals + last-90-days ticket rows (for daily breakdown)
   const [
     { count: totalConversations },
     { count: openTickets },
@@ -114,7 +120,7 @@ router.get("/dashboard", async (req: Request, res: Response) => {
     supabase.from("tickets").select("*", { count: "exact", head: true }).eq("business_id", businessId).in("priority", ["urgent", "high"]),
     supabase.from("messages").select("response_time_ms").eq("role", "assistant").not("response_time_ms", "is", null).limit(200),
     supabase.from("tickets").select("status, priority, created_at").eq("business_id", businessId)
-      .gte("created_at", days[0].start).lte("created_at", days[6].end),
+      .gte("created_at", dayBoundaries[0].start).lte("created_at", dayBoundaries[6].end),
   ]);
 
   const totalTickets = (openTickets ?? 0) + (resolvedTickets ?? 0);
@@ -123,16 +129,13 @@ router.get("/dashboard", async (req: Request, res: Response) => {
     ? Math.round(messages.reduce((s: number, m: any) => s + (m.response_time_ms ?? 0), 0) / messages.length)
     : 0;
 
-  // Per-day series
-  const spark_open: number[]       = [];
-  const spark_escalated: number[]  = [];
-  const spark_resolved: number[]   = [];
-  const spark_rate: number[]       = [];
+  const spark_open: number[]      = [];
+  const spark_escalated: number[] = [];
+  const spark_resolved: number[]  = [];
+  const spark_rate: number[]      = [];
 
-  for (const day of days) {
-    const dayTickets = (recentTickets ?? []).filter((t: any) =>
-      t.created_at >= day.start && t.created_at <= day.end
-    );
+  for (const day of dayBoundaries) {
+    const dayTickets = (recentTickets ?? []).filter((t: any) => t.created_at >= day.start && t.created_at <= day.end);
     const open_n  = dayTickets.filter((t: any) => t.status === "open" || t.status === "in_progress").length;
     const esc_n   = dayTickets.filter((t: any) => t.priority === "urgent" || t.priority === "high").length;
     const res_n   = dayTickets.filter((t: any) => t.status === "resolved" || t.status === "closed").length;
@@ -143,7 +146,7 @@ router.get("/dashboard", async (req: Request, res: Response) => {
     spark_rate.push(total_n > 0 ? Math.round((res_n / total_n) * 100) : 0);
   }
 
-  res.json({
+  const result = {
     total_conversations: totalConversations ?? 0,
     open_tickets: openTickets ?? 0,
     resolved_tickets: resolvedTickets ?? 0,
@@ -154,34 +157,41 @@ router.get("/dashboard", async (req: Request, res: Response) => {
     spark_escalated,
     spark_resolved,
     spark_rate,
-  });
+  };
+
+  cacheSet(cacheKey, result);
+  res.json(result);
 });
 
 // GET /api/analytics/knowledge
 router.get("/knowledge", async (req: Request, res: Response) => {
   const { businessId } = req.user!;
+  const cacheKey = `knowledge:${businessId}`;
+  const cached = cacheGet(cacheKey);
+  if (cached) { res.json(cached); return; }
 
-  // Most referenced documents = documents with the most chunks (proxy for usage)
   const { data: documents } = await supabase
     .from("documents")
     .select("id, name, file_type, status")
     .eq("business_id", businessId)
     .eq("status", "ready");
 
-  const docStats = await Promise.all(
-    (documents ?? []).map(async (doc) => {
-      const { count } = await supabase
-        .from("chunks")
-        .select("*", { count: "exact", head: true })
-        .eq("document_id", doc.id);
-      return { ...doc, chunk_count: count ?? 0 };
-    })
-  );
+  // Single query for all chunk counts — replaces N+1 per-document queries
+  const docIds = (documents ?? []).map((d) => d.id);
+  const { data: allChunks } = docIds.length > 0
+    ? await supabase.from("chunks").select("document_id").in("document_id", docIds)
+    : { data: [] };
 
-  docStats.sort((a, b) => b.chunk_count - a.chunk_count);
+  const countMap = new Map<string, number>();
+  for (const chunk of allChunks ?? []) {
+    countMap.set(chunk.document_id, (countMap.get(chunk.document_id) ?? 0) + 1);
+  }
 
-  // Unanswered questions = user messages that have no following assistant message
-  // Approximation: last user message in conversations with only 1 message
+  const docStats = (documents ?? [])
+    .map((doc) => ({ ...doc, chunk_count: countMap.get(doc.id) ?? 0 }))
+    .sort((a, b) => b.chunk_count - a.chunk_count);
+
+  // Unanswered questions heuristic
   const { data: unanswered } = await supabase
     .from("messages")
     .select("id, content, created_at, conversation_id")
@@ -189,13 +199,13 @@ router.get("/knowledge", async (req: Request, res: Response) => {
     .order("created_at", { ascending: false })
     .limit(20);
 
-  // Filter to messages that appear to not have a reply (simplified heuristic)
-  const unreplied = (unanswered ?? []).slice(0, 10);
-
-  res.json({
+  const result = {
     top_documents: docStats.slice(0, 10),
-    unanswered_questions: unreplied,
-  });
+    unanswered_questions: (unanswered ?? []).slice(0, 10),
+  };
+
+  cacheSet(cacheKey, result);
+  res.json(result);
 });
 
 export default router;

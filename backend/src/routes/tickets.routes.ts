@@ -19,7 +19,7 @@ router.get("/", async (req: Request, res: Response) => {
   if (status && status !== "all") query = query.eq("status", status as string);
   if (priority && priority !== "all") query = query.eq("priority", priority as string);
 
-  const { data, error } = await query;
+  const { data, error } = await query.limit(200);
   if (error) throw error;
 
   res.json(data);

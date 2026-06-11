@@ -25,6 +25,7 @@ router.get("/", async (req: Request, res: Response) => {
     `)
     .eq("business_id", businessId)
     .order("created_at", { ascending: false })
+    .limit(100)
     .limit(1, { referencedTable: "messages" });
 
   if (error) throw error;
@@ -53,7 +54,8 @@ router.get("/", async (req: Request, res: Response) => {
 // GET /api/conversations/search?q=
 router.get("/search", async (req: Request, res: Response) => {
   const { businessId } = req.user!;
-  const q = String(req.query.q ?? "").trim();
+  // Strip characters that could break Supabase .or() filter syntax
+  const q = String(req.query.q ?? "").trim().replace(/[%,()]/g, "").slice(0, 100);
 
   if (!q) {
     req.url = "/";
