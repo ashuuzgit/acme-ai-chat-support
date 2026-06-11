@@ -33,6 +33,7 @@ const schema = z.object({
   welcome_message: z.string().min(1, "Welcome message is required"),
   personality: z.enum(["professional", "friendly", "technical"]),
   escalation_rules: z.array(z.string()),
+  suggested_questions: z.array(z.string()),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -129,10 +130,11 @@ function PreviewChat({ p, botName }: { p: typeof PERSONALITIES[number]; botName:
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function AiConfigPage() {
-  const [loading, setLoading]       = useState(true);
-  const [loadError, setLoadError]   = useState<string | null>(null);
-  const [ruleInput, setRuleInput]   = useState("");
-  const [preview, setPreview]       = useState<typeof PERSONALITIES[number] | null>(null);
+  const [loading, setLoading]           = useState(true);
+  const [loadError, setLoadError]       = useState<string | null>(null);
+  const [ruleInput, setRuleInput]       = useState("");
+  const [suggInput, setSuggInput]       = useState("");
+  const [preview, setPreview]           = useState<typeof PERSONALITIES[number] | null>(null);
   const [businessId, setBusinessId] = useState<string | null>(null);
   const [copied, setCopied]         = useState(false);
   const widgetRef = useRef<HTMLDivElement>(null);
@@ -144,11 +146,13 @@ export default function AiConfigPage() {
       welcome_message: "Hi! How can I help you today?",
       personality: "professional",
       escalation_rules: DEFAULT_RULES,
+      suggested_questions: [],
     },
   });
 
   const { control, handleSubmit, watch, setValue, formState } = form;
   const escalationRules    = watch("escalation_rules");
+  const suggestedQuestions = watch("suggested_questions");
   const botName            = watch("bot_name");
   const currentPersonality = watch("personality");
 
@@ -167,6 +171,7 @@ export default function AiConfigPage() {
           welcome_message: data.welcome_message,
           personality: data.personality,
           escalation_rules: data.escalation_rules?.length ? data.escalation_rules : DEFAULT_RULES,
+          suggested_questions: (data as any).suggested_questions ?? [],
         });
         // Don't auto-open preview — only open on explicit user click
       })
@@ -200,6 +205,21 @@ export default function AiConfigPage() {
 
   function onRuleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
     if (e.key === "Enter") { e.preventDefault(); addRule(); }
+  }
+
+  function addSugg() {
+    const trimmed = suggInput.trim();
+    if (!trimmed || suggestedQuestions.includes(trimmed) || suggestedQuestions.length >= 4) return;
+    setValue("suggested_questions", [...suggestedQuestions, trimmed]);
+    setSuggInput("");
+  }
+
+  function removeSugg(q: string) {
+    setValue("suggested_questions", suggestedQuestions.filter((s) => s !== q));
+  }
+
+  function onSuggKeyDown(e: KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Enter") { e.preventDefault(); addSugg(); }
   }
 
   if (loading) {
@@ -378,6 +398,60 @@ export default function AiConfigPage() {
               </Button>
             </div>
             <p className="text-xs text-muted-foreground">Press Enter or click Add. Keywords are matched case-insensitively.</p>
+          </CardContent>
+        </Card>
+
+        {/* Suggested Questions */}
+        <Card>
+          <CardHeader className="pb-4">
+            <CardTitle className="text-base">Suggested Questions</CardTitle>
+            <CardDescription>
+              Quick-reply chips shown to customers when the chat opens (up to 4). Only add questions your knowledge base can actually answer.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="min-h-[2.5rem] flex flex-wrap gap-2">
+              {suggestedQuestions.length === 0 ? (
+                <p className="text-xs text-muted-foreground italic">No suggestions yet — customers will see a blank chat</p>
+              ) : (
+                suggestedQuestions.map((q) => (
+                  <Badge key={q} variant="secondary" className="gap-1.5 pr-1.5 text-sm font-normal">
+                    {q}
+                    <button
+                      type="button"
+                      onClick={() => removeSugg(q)}
+                      className="rounded-full hover:bg-foreground/10 p-0.5 transition-colors"
+                      aria-label={`Remove ${q}`}
+                    >
+                      <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </Badge>
+                ))
+              )}
+            </div>
+            <Separator />
+            <div className="flex gap-2">
+              <Input
+                placeholder="e.g. What are your pricing plans?"
+                value={suggInput}
+                onChange={(e) => setSuggInput(e.target.value)}
+                onKeyDown={onSuggKeyDown}
+                className="flex-1 min-w-0"
+                disabled={suggestedQuestions.length >= 4}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={addSugg}
+                disabled={!suggInput.trim() || suggestedQuestions.length >= 4}
+                className="shrink-0"
+              >
+                Add
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">Press Enter or click Add. Maximum 4 suggestions.</p>
           </CardContent>
         </Card>
 

@@ -11,7 +11,7 @@ router.get("/", async (req: Request, res: Response) => {
 
   const { data, error } = await supabase
     .from("ai_configs")
-    .select("id, bot_name, welcome_message, personality, escalation_rules")
+    .select("id, bot_name, welcome_message, personality, escalation_rules, suggested_questions")
     .eq("business_id", businessId)
     .single();
 
@@ -26,7 +26,7 @@ router.get("/", async (req: Request, res: Response) => {
 // PUT /api/config
 router.put("/", async (req: Request, res: Response) => {
   const { businessId } = req.user!;
-  const { bot_name, welcome_message, personality, escalation_rules } = req.body;
+  const { bot_name, welcome_message, personality, escalation_rules, suggested_questions } = req.body;
 
   const { data, error } = await supabase
     .from("ai_configs")
@@ -35,6 +35,7 @@ router.put("/", async (req: Request, res: Response) => {
       welcome_message,
       personality,
       escalation_rules,
+      suggested_questions: suggested_questions ?? [],
     })
     .eq("business_id", businessId)
     .select()

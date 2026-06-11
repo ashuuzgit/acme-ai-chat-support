@@ -155,7 +155,7 @@ router.get("/widget-config/:businessId", async (req: Request, res: Response) => 
 
   const { data: config, error } = await supabase
     .from("ai_configs")
-    .select("bot_name, welcome_message, personality")
+    .select("bot_name, welcome_message, personality, suggested_questions")
     .eq("business_id", businessId)
     .single();
 

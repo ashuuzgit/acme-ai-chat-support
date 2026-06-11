@@ -12,6 +12,7 @@ interface WidgetConfig {
   bot_name: string;
   welcome_message: string;
   personality: string;
+  suggested_questions?: string[];
 }
 
 interface Message {
@@ -27,8 +28,6 @@ interface CustomerInfo {
 }
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
-
-const SUGGESTED = ["Track my order", "Pricing", "Refund policy", "Contact support"];
 
 // ─── Typing indicator ─────────────────────────────────────────────────────────
 
@@ -459,9 +458,9 @@ export default function WidgetPage({ params }: { params: { businessId: string } 
           <div key={msg.id}>
             <ChatBubble message={msg} botInitial={botInitial} customerInitial={customerInitial} />
             {/* Suggestion chips after welcome */}
-            {i === 0 && msg.id === "welcome" && (
+            {i === 0 && msg.id === "welcome" && config?.suggested_questions && config.suggested_questions.length > 0 && (
               <div className="flex flex-wrap gap-1.5 mt-3 ml-8">
-                {SUGGESTED.map((q) => (
+                {config.suggested_questions.map((q) => (
                   <button
                     key={q}
                     onClick={() => sendMessage(q)}
