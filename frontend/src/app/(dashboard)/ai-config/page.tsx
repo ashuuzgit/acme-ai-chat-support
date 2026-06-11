@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, KeyboardEvent } from "react";
+import { useEffect, useRef, useState, KeyboardEvent } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -135,6 +135,7 @@ export default function AiConfigPage() {
   const [preview, setPreview]       = useState<typeof PERSONALITIES[number] | null>(null);
   const [businessId, setBusinessId] = useState<string | null>(null);
   const [copied, setCopied]         = useState(false);
+  const widgetRef = useRef<HTMLDivElement>(null);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -177,6 +178,12 @@ export default function AiConfigPage() {
     try {
       await api.put("/api/config", values);
       toast.success("Configuration saved");
+      // On mobile, scroll to widget section so user can copy the link
+      if (window.innerWidth < 768) {
+        setTimeout(() => {
+          widgetRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+        }, 300);
+      }
     } catch {
       toast.error("Failed to save configuration");
     }
@@ -378,7 +385,7 @@ export default function AiConfigPage() {
 
         {/* Widget Embed — inside left column so it's properly constrained on all screen sizes */}
         {businessId && widgetUrl && (
-          <Card>
+          <div ref={widgetRef}><Card>
             <CardHeader className="pb-4">
               <CardTitle className="text-base">Widget</CardTitle>
               <CardDescription>Share this link or embed the widget on any website</CardDescription>
@@ -414,7 +421,7 @@ export default function AiConfigPage() {
                 <code className="text-xs bg-muted px-3 py-2 rounded-md block break-all">{businessId}</code>
               </div>
             </CardContent>
-          </Card>
+          </Card></div>
         )}
 
       </div>
