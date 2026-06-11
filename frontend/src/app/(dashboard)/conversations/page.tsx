@@ -4,7 +4,6 @@ import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import api from "@/lib/api";
@@ -281,12 +280,7 @@ function ConversationsInner() {
   // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    <div className="flex w-full
-      h-[calc(100dvh-5.5rem)]
-      sm:h-[calc(100dvh-6.5rem)]
-      md:h-[calc(100dvh-3rem)]
-      lg:h-[calc(100dvh-4rem)]
-      max-w-7xl mx-auto md:rounded-xl md:border md:overflow-hidden bg-background">
+    <div className="flex w-full h-[calc(100dvh-5.5rem)] sm:h-[calc(100dvh-6.5rem)] md:h-[calc(100dvh-3rem)] lg:h-[calc(100dvh-4rem)] max-w-7xl mx-auto md:rounded-xl md:border bg-background">
 
       {/* ── Left panel: conversation list ──────────────────────────────────── */}
       <div className={cn(
@@ -312,7 +306,7 @@ function ConversationsInner() {
         </div>
 
         {/* List */}
-        <ScrollArea className="flex-1">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden">
           {listError ? (
             <div className="px-4 py-6 text-center text-xs text-destructive space-y-2">
               <p>{listError}</p>
@@ -340,7 +334,7 @@ function ConversationsInner() {
               />
             ))
           )}
-        </ScrollArea>
+        </div>
       </div>
 
       {/* ── Right panel: message thread ────────────────────────────────────── */}
@@ -401,7 +395,7 @@ function ConversationsInner() {
             </div>
 
             {/* Messages */}
-            <ScrollArea className="flex-1 px-4 py-4">
+            <div className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-4">
               {thread.messages.length === 0 ? (
                 <div className="flex justify-center py-8">
                   <p className="text-sm text-muted-foreground italic">No messages in this conversation</p>
@@ -430,7 +424,7 @@ function ConversationsInner() {
                   <div ref={bottomRef} />
                 </div>
               )}
-            </ScrollArea>
+            </div>
           </>
         ) : null}
       </div>
