@@ -13,15 +13,6 @@ A multi-tenant SaaS platform that lets any business deploy a branded AI customer
 
 ---
 
-## Demo Credentials
-
-| Field | Value |
-|-------|-------|
-| Email | admin@demo.com |
-| Password | demo123456 |
-
----
-
 ## Tech Stack
 
 | Layer | Technology |
