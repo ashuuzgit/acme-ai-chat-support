@@ -139,6 +139,8 @@ export default function AiConfigPage() {
   const [ruleInput, setRuleInput]     = useState("");
   const [preview, setPreview]         = useState<typeof PERSONALITIES[number] | null>(null);
   const [isMobile, setIsMobile]       = useState(false);
+  const [businessId, setBusinessId]   = useState<string | null>(null);
+  const [copied, setCopied]           = useState(false);
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -161,6 +163,12 @@ export default function AiConfigPage() {
   const escalationRules = watch("escalation_rules");
   const botName         = watch("bot_name");
   const currentPersonality = watch("personality");
+
+  useEffect(() => {
+    api.get<{ business: { id: string } }>("/api/auth/me")
+      .then(({ data }) => setBusinessId(data.business.id))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     api
@@ -438,6 +446,46 @@ export default function AiConfigPage() {
           </div>
         </DialogContent>
       </Dialog>
+      )}
+
+      {/* Widget Embed */}
+      {businessId && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Widget</CardTitle>
+            <CardDescription>Share this link or embed the widget on any website</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <p className="text-xs text-muted-foreground mb-1.5 font-medium">Direct widget URL</p>
+              <div className="flex items-center gap-2">
+                <code className="flex-1 text-xs bg-muted px-3 py-2 rounded-md truncate">
+                  {process.env.NEXT_PUBLIC_APP_URL}/widget/{businessId}
+                </code>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="shrink-0 h-8 text-xs"
+                  onClick={() => {
+                    navigator.clipboard.writeText(`${process.env.NEXT_PUBLIC_APP_URL}/widget/${businessId}`);
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 2000);
+                  }}
+                >
+                  {copied ? "Copied!" : "Copy"}
+                </Button>
+              </div>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground mb-1.5 font-medium">Embed snippet</p>
+              <pre className="text-xs bg-muted px-3 py-2 rounded-md overflow-x-auto whitespace-pre-wrap">{`<iframe\n  src="${process.env.NEXT_PUBLIC_APP_URL}/widget/${businessId}"\n  width="400"\n  height="600"\n  frameborder="0"\n/>`}</pre>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground mb-1.5 font-medium">Your business ID</p>
+              <code className="text-xs bg-muted px-3 py-2 rounded-md block">{businessId}</code>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
     </div>
