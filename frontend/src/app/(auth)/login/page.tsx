@@ -73,8 +73,8 @@ export default function LoginPage() {
   return (
     <Card className="shadow-lg border-0">
       <CardHeader className="space-y-1 pb-4">
-        <CardTitle className="text-xl">Welcome back</CardTitle>
-        <CardDescription>Sign in to your SupportAI account</CardDescription>
+        <CardTitle className="text-xl">Sign in</CardTitle>
+        <CardDescription>Log in to your existing SupportAI account</CardDescription>
       </CardHeader>
 
       <CardContent>

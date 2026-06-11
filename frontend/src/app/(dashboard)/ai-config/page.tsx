@@ -178,12 +178,10 @@ export default function AiConfigPage() {
     try {
       await api.put("/api/config", values);
       toast.success("Configuration saved");
-      // On mobile, scroll to widget section so user can copy the link
-      if (window.innerWidth < 768) {
-        setTimeout(() => {
-          widgetRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-        }, 300);
-      }
+      // Scroll to widget section so user can copy the link
+      setTimeout(() => {
+        widgetRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 300);
     } catch {
       toast.error("Failed to save configuration");
     }

@@ -94,7 +94,7 @@ export default function RegisterPage() {
   return (
     <Card className="shadow-lg border-0">
       <CardHeader className="space-y-1 pb-4">
-        <CardTitle className="text-xl">Create your account</CardTitle>
+        <CardTitle className="text-xl">Create new account</CardTitle>
         <CardDescription>Start your free SupportAI workspace</CardDescription>
       </CardHeader>
 
