@@ -8,8 +8,8 @@ A multi-tenant SaaS platform that lets any business deploy a branded AI customer
 
 | Service | URL |
 |---------|-----|
-| Frontend | `[your Vercel URL]` |
-| Backend | `[your Railway URL]` |
+| Frontend | https://support-bot-lac.vercel.app/login |
+| Backend | https://supportbot-production-80a2.up.railway.app/ |
 
 ---
 
