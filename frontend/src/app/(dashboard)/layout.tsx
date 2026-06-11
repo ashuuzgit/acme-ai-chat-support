@@ -253,17 +253,22 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                   href={item.href}
                   onClick={handleNavClick}
                   className={cn(
-                    "flex items-center gap-3 rounded-lg py-2 text-sm transition-all duration-200",
+                    "flex items-center gap-3 rounded-lg py-2 text-sm transition-colors duration-150",
                     showLabels ? "px-2.5" : "md:justify-center md:px-2 px-2.5",
                     active
                       ? "bg-primary text-primary-foreground font-medium shadow-sm"
-                      : "text-muted-foreground hover:bg-muted/80 hover:text-foreground hover:shadow-[0_0_0_1px_hsl(var(--primary)/0.10),_0_2px_8px_hsl(var(--primary)/0.06)]"
+                      : "text-muted-foreground hover:bg-muted/80 hover:text-foreground"
                   )}
                 >
-                  {item.icon}
+                  <span className={cn(
+                    "shrink-0 flex items-center justify-center",
+                    !showLabels ? "[&>svg]:h-5 [&>svg]:w-5" : "[&>svg]:h-4 [&>svg]:w-4"
+                  )}>
+                    {item.icon}
+                  </span>
                   <span
                     className={cn(
-                      "truncate transition-all duration-200 whitespace-nowrap",
+                      "truncate transition-[opacity,width] duration-200 whitespace-nowrap",
                       showLabels ? "opacity-100 w-auto" : "opacity-0 w-0 md:hidden"
                     )}
                   >
