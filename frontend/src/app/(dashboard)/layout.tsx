@@ -81,14 +81,13 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
 
-  // pinned = user clicked to keep sidebar open permanently
-  const [pinned, setPinned] = useState(false);
-  // hovered = mouse is over the sidebar (temporary expand)
-  const [hovered, setHovered] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const [pinned,      setPinned]      = useState(false);
+  const [hovered,     setHovered]     = useState(false);
+  const [mobileOpen,  setMobileOpen]  = useState(false);
+  const [showPinHint, setShowPinHint] = useState(false);
 
-  // leave timer — small delay before collapsing so it doesn't snap shut instantly
-  const leaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const leaveTimer    = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hintTimer     = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const saved = localStorage.getItem("sidebar-pinned");
@@ -96,14 +95,32 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   }, []);
 
   const isExpanded  = pinned || hovered;
+
+  // Show pin hint once — first time the sidebar expands on desktop
+  useEffect(() => {
+    if (!isExpanded || pinned) return;
+    if (localStorage.getItem("sidebar-pin-hint-seen")) return;
+    setShowPinHint(true);
+    hintTimer.current = setTimeout(() => {
+      setShowPinHint(false);
+      localStorage.setItem("sidebar-pin-hint-seen", "1");
+    }, 4000);
+    return () => { if (hintTimer.current) clearTimeout(hintTimer.current); };
+  }, [isExpanded, pinned]);
   // Labels/text visible when desktop is expanded OR mobile drawer is open
   const showLabels  = isExpanded || mobileOpen;
 
   function togglePin() {
+    // Dismiss hint immediately on first pin
+    if (showPinHint) {
+      setShowPinHint(false);
+      if (hintTimer.current) clearTimeout(hintTimer.current);
+      localStorage.setItem("sidebar-pin-hint-seen", "1");
+    }
     setPinned((prev) => {
       const next = !prev;
       localStorage.setItem("sidebar-pinned", JSON.stringify(next));
-      if (next) setHovered(false); // no need for hover state when pinned
+      if (next) setHovered(false);
       return next;
     });
   }
@@ -171,28 +188,46 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             </span>
 
             {/* Pin / unpin button — only visible when expanded on desktop */}
-            <button
-              onClick={togglePin}
-              className={cn(
-                "hidden md:flex p-1.5 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-all duration-200 shrink-0",
-                isExpanded ? "opacity-100" : "opacity-0 pointer-events-none"
-              )}
+            <div className={cn(
+              "relative hidden md:flex shrink-0",
+              isExpanded ? "opacity-100" : "opacity-0 pointer-events-none"
+            )}>
+              <button
+                onClick={togglePin}
+                className={cn(
+                  "p-1.5 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-all duration-200",
+                  showPinHint && !pinned && "animate-pinGlow"
+                )}
+                aria-label={pinned ? "Unpin sidebar" : "Pin sidebar open"}
+                title={pinned ? "Unpin sidebar" : "Pin sidebar open"}
+              >
+                {pinned ? (
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                  </svg>
+                ) : (
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16l-7-3.5L5 21V5Z" />
+                  </svg>
+                )}
+              </button>
 
-              aria-label={pinned ? "Unpin sidebar" : "Pin sidebar open"}
-              title={pinned ? "Unpin sidebar" : "Pin sidebar open"}
-            >
-              {pinned ? (
-                // X / unpin
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-                </svg>
-              ) : (
-                // Pin icon
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16l-7-3.5L5 21V5Z" />
-                </svg>
+              {/* First-time hint callout — floats to the right of the sidebar */}
+              {showPinHint && !pinned && (
+                <div className={cn(
+                  "absolute left-full top-1/2 -translate-y-1/2 ml-3 z-50",
+                  "w-40 rounded-lg border border-border bg-popover",
+                  "px-3 py-2 shadow-md",
+                  "text-xs text-popover-foreground leading-snug",
+                  "animate-hintFadeIn",
+                  "pointer-events-none select-none whitespace-normal",
+                )}>
+                  {/* Arrow pointing left */}
+                  <span className="absolute -left-[5px] top-1/2 -translate-y-1/2 block h-2.5 w-2.5 rotate-45 border-l border-b border-border bg-popover" />
+                  Pin sidebar open
+                </div>
               )}
-            </button>
+            </div>
 
             {/* Close on mobile */}
             <button

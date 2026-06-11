@@ -28,6 +28,21 @@ const config: Config = {
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
       },
+      keyframes: {
+        pinGlow: {
+          "0%":   { boxShadow: "0 0 0px 0px rgba(0,0,0,0)" },
+          "40%":  { boxShadow: "0 0 10px 3px rgba(0,0,0,0.25)" },
+          "100%": { boxShadow: "0 0 0px 0px rgba(0,0,0,0)" },
+        },
+        hintFadeIn: {
+          "0%":   { opacity: "0", transform: "translateX(-4px)" },
+          "100%": { opacity: "1", transform: "translateX(0)" },
+        },
+      },
+      animation: {
+        pinGlow:    "pinGlow 0.8s ease-out forwards",
+        hintFadeIn: "hintFadeIn 0.25s ease-out forwards",
+      },
     },
   },
   plugins: [require("tailwindcss-animate")],

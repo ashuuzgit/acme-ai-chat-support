@@ -1,5 +1,5 @@
 import { Router, Request, Response } from "express";
-import Groq from "groq-sdk";
+import Groq from "groq-sdk"; // no money for openai, using groq.ai for LLM calls
 import { supabase } from "../db/supabase";
 import { searchChunks, buildSystemPrompt } from "../services/rag.service";
 import { detectEscalation } from "../services/escalation.service";
