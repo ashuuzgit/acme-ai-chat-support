@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { type ReactNode } from "react";
 import { removeToken } from "@/lib/auth";
 import { cn } from "@/lib/utils";
+import api from "@/lib/api";
 import {
   Tooltip,
   TooltipContent,
@@ -81,13 +82,44 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
 
-  const [pinned,      setPinned]      = useState(false);
-  const [hovered,     setHovered]     = useState(false);
-  const [mobileOpen,  setMobileOpen]  = useState(false);
-  const [showPinHint, setShowPinHint] = useState(false);
+  const [pinned,        setPinned]        = useState(false);
+  const [hovered,       setHovered]       = useState(false);
+  const [mobileOpen,    setMobileOpen]    = useState(false);
+  const [showPinHint,   setShowPinHint]   = useState(false);
+  const [newTickets,    setNewTickets]    = useState(0);
 
   const leaveTimer    = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hintTimer     = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pollTimer     = useRef<ReturnType<typeof setInterval> | null>(null);
+  const seenCountRef  = useRef<number>(0);
+
+  const checkNewTickets = useCallback(async () => {
+    try {
+      const { data } = await api.get<{ id: string; status: string; created_at: string }[]>("/api/tickets");
+      const openCount = data.filter((t) => t.status === "open").length;
+      const seen = seenCountRef.current;
+      if (openCount > seen) {
+        setNewTickets(openCount - seen);
+      }
+    } catch { /* silently ignore — user may not be authed yet */ }
+  }, []);
+
+  // Poll every 30 s; also run once on mount
+  useEffect(() => {
+    const stored = parseInt(localStorage.getItem("tickets-seen-count") ?? "0", 10);
+    seenCountRef.current = stored;
+    checkNewTickets();
+    pollTimer.current = setInterval(checkNewTickets, 30_000);
+    return () => { if (pollTimer.current) clearInterval(pollTimer.current); };
+  }, [checkNewTickets]);
+
+  // Auto-clear badge when already viewing tickets page
+  useEffect(() => {
+    if (pathname === "/tickets" || pathname.startsWith("/tickets/")) {
+      handleNavClick("/tickets");
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
 
   useEffect(() => {
     const saved = localStorage.getItem("sidebar-pinned");
@@ -134,8 +166,19 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     leaveTimer.current = setTimeout(() => setHovered(false), 120);
   }
 
-  function handleNavClick() {
+  function handleNavClick(href: string) {
     setMobileOpen(false);
+    if (href === "/tickets") {
+      // Mark current open count as seen
+      api.get<{ id: string; status: string }[]>("/api/tickets")
+        .then(({ data }) => {
+          const openCount = data.filter((t) => t.status === "open").length;
+          seenCountRef.current = openCount;
+          localStorage.setItem("tickets-seen-count", String(openCount));
+          setNewTickets(0);
+        })
+        .catch(() => {});
+    }
   }
 
   function handleLogout() {
@@ -248,10 +291,13 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                 pathname === item.href ||
                 (item.href !== "/dashboard" && pathname.startsWith(item.href));
 
+              const isTickets = item.href === "/tickets";
+              const showBadge = isTickets && newTickets > 0;
+
               const navLink = (
                 <Link
                   href={item.href}
-                  onClick={handleNavClick}
+                  onClick={() => handleNavClick(item.href)}
                   className={cn(
                     "flex items-center gap-3 rounded-lg py-2 text-sm transition-colors duration-150",
                     showLabels ? "px-2.5" : "md:justify-center md:px-2 px-2.5",
@@ -261,10 +307,15 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                   )}
                 >
                   <span className={cn(
-                    "shrink-0 flex items-center justify-center",
+                    "relative shrink-0 flex items-center justify-center",
                     !showLabels ? "[&>svg]:h-5 [&>svg]:w-5" : "[&>svg]:h-4 [&>svg]:w-4"
                   )}>
                     {item.icon}
+                    {showBadge && (
+                      <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-white text-[9px] font-bold leading-none ring-2 ring-background">
+                        {newTickets > 9 ? "9+" : newTickets}
+                      </span>
+                    )}
                   </span>
                   <span
                     className={cn(
@@ -274,6 +325,11 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                   >
                     {item.label}
                   </span>
+                  {showBadge && showLabels && (
+                    <span className="ml-auto shrink-0 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold px-1 leading-none">
+                      {newTickets > 99 ? "99+" : newTickets}
+                    </span>
+                  )}
                 </Link>
               );
 
@@ -328,12 +384,17 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           <header className="sticky top-0 z-20 flex h-14 items-center gap-3 border-b bg-background/95 backdrop-blur-sm px-4 md:hidden shrink-0">
             <button
               onClick={() => setMobileOpen(true)}
-              className="p-2 -ml-2 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+              className="relative p-2 -ml-2 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
               aria-label="Open menu"
             >
               <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
               </svg>
+              {newTickets > 0 && (
+                <span className="absolute top-1 right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-red-500 text-white text-[8px] font-bold leading-none ring-1 ring-background">
+                  {newTickets > 9 ? "9+" : newTickets}
+                </span>
+              )}
             </button>
             <div className="flex items-center gap-2">
               <div className="flex h-6 w-6 items-center justify-center rounded bg-primary text-primary-foreground text-xs font-bold">
