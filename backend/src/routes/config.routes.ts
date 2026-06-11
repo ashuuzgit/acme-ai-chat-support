@@ -11,7 +11,7 @@ router.get("/", async (req: Request, res: Response) => {
 
   const { data, error } = await supabase
     .from("ai_configs")
-    .select("id, bot_name, welcome_message, personality, escalation_rules, updated_at")
+    .select("id, bot_name, welcome_message, personality, escalation_rules")
     .eq("business_id", businessId)
     .single();
 
@@ -35,7 +35,6 @@ router.put("/", async (req: Request, res: Response) => {
       welcome_message,
       personality,
       escalation_rules,
-      updated_at: new Date().toISOString(),
     })
     .eq("business_id", businessId)
     .select()
