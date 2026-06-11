@@ -281,11 +281,16 @@ function ConversationsInner() {
   // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] md:h-[calc(100vh-6rem)] max-w-7xl mx-auto md:rounded-xl md:border overflow-hidden bg-background">
+    <div className="flex w-full
+      h-[calc(100dvh-5.5rem)]
+      sm:h-[calc(100dvh-6.5rem)]
+      md:h-[calc(100dvh-3rem)]
+      lg:h-[calc(100dvh-4rem)]
+      max-w-7xl mx-auto md:rounded-xl md:border md:overflow-hidden bg-background">
 
       {/* ── Left panel: conversation list ──────────────────────────────────── */}
       <div className={cn(
-        "flex flex-col border-r bg-background",
+        "flex flex-col border-r bg-background overflow-hidden",
         // Mobile: full width, hidden when viewing thread
         "w-full md:w-72 md:shrink-0",
         mobilePane === "thread" ? "hidden md:flex" : "flex"
@@ -340,7 +345,7 @@ function ConversationsInner() {
 
       {/* ── Right panel: message thread ────────────────────────────────────── */}
       <div className={cn(
-        "flex-1 flex flex-col min-w-0 bg-background",
+        "flex-1 flex flex-col min-w-0 overflow-hidden bg-background",
         // Mobile: full width, hidden when viewing list
         mobilePane === "list" ? "hidden md:flex" : "flex"
       )}>
