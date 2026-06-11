@@ -501,10 +501,6 @@ export default function WidgetPage({ params }: { params: { businessId: string } 
             </svg>
           </Button>
         </form>
-        {/* Powered by — mobile only (desktop shown outside the card) */}
-        <p className="sm:hidden mt-1.5 text-center text-[10px] text-slate-300 dark:text-slate-600">
-          Powered by SupportAI
-        </p>
       </div>
     </PageShell>
   );
